@@ -2,156 +2,131 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chptr One – AI Fluency Without Fear</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chptr One – Learn AI Without Fear</title>
 
-  <!-- Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@500&display=swap" rel="stylesheet">
-
-  <!-- Style -->
+  <!-- Font & Brand Styles -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
     body {
       font-family: 'Inter', sans-serif;
-      background: linear-gradient(135deg, #f8e9d2, #fff6ec);
+      background: #fefbf6;
       color: #1a1a1a;
       padding: 2rem;
-      margin: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      max-width: 600px;
+      margin: auto;
+    }
+
+    .chptr-one-equity-message {
+      background: #fff3d6;
+      border-left: 6px solid #f4ae3f;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.04);
     }
 
     h1 {
-      font-family: 'Playfair Display', serif;
-      font-size: 2rem;
+      font-size: 1.8rem;
       margin-bottom: 0.5rem;
-      text-align: center;
-    }
-
-    .tagline {
-      font-size: 1rem;
-      color: #444;
-      text-align: center;
-      margin-bottom: 2rem;
-    }
-
-    .content {
-      background: #ffffff;
-      padding: 2rem;
-      border-radius: 16px;
-      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
-      max-width: 600px;
-      width: 100%;
     }
 
     label {
       font-weight: 600;
+      margin-top: 1.25rem;
       display: block;
-      margin: 1rem 0 0.5rem;
     }
 
-    select, textarea, button {
-      width: 100%;
-      font-size: 1rem;
+    select {
       padding: 0.75rem;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      margin-bottom: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 1rem;
+      width: 100%;
+      margin-top: 0.5rem;
     }
 
     button {
-      background-color: #f4ae3f;
+      background: #f4ae3f;
       color: #1a1a1a;
       font-weight: bold;
+      padding: 0.75rem 1rem;
+      border: none;
+      border-radius: 6px;
       cursor: pointer;
-      transition: background 0.3s;
+      margin-top: 1.5rem;
+      width: 100%;
     }
 
     button:hover {
-      background-color: #e6a21f;
+      background: #e6a21f;
     }
 
     #storyOutput {
-      margin-top: 1rem;
-      background: #fefbf6;
-      padding: 1rem;
-      border-radius: 8px;
-      font-style: italic;
+      margin-top: 2rem;
+      background: #fff;
+      padding: 1.25rem;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
     }
   </style>
 </head>
 
 <body>
-  <h1>Chptr One</h1>
-  <p class="tagline">AI fluency without fear. A voice-first experience that meets you where you are.</p>
+  <section class="chptr-one-equity-message">
+    <h1>Welcome to Chptr One</h1>
+    <p>
+      🚺 <strong>Danish women use AI 20% less than men.</strong><br><br>
+      We’re here to change that. Chptr One is a voice-first learning experience designed to make AI feel accessible, inclusive, and empowering — for everyone.<br><br>
+      Whether you’re just starting or deep into your AI journey, we’ll meet you exactly where you are. No shame. No jargon. Just support.
+    </p>
+  </section>
 
-  <div class="content">
-    <label for="voice">🎙️ Choose your narrator voice:</label>
-    <select id="voice">
-      <option value="maggie">Maggie (warm & clear)</option>
-      <option value="rachel">Rachel (neutral)</option>
-    </select>
+  <!-- Learning Journey Selector -->
+  <label for="module">📘 Where are you in your AI journey?</label>
+  <select id="module" name="module">
+    <option value="what_is_ai">What is AI?</option>
+    <option value="problem_solving">Solving problems with AI</option>
+    <option value="real_world">Real-world AI</option>
+    <option value="machine_learning">Machine learning</option>
+    <option value="neural_networks">Neural networks</option>
+    <option value="implications">Implications & Ethics</option>
+  </select>
 
-    <label for="prompt">📚 What do you want to learn today?</label>
-    <textarea id="prompt" rows="4" placeholder="Speak or type your question..."></textarea>
+  <!-- Voice Selection -->
+  <label for="voice">🎙️ Choose your narrator voice:</label>
+  <select id="voice" name="voice">
+    <option value="maggie">Maggie (warm & clear)</option>
+    <option value="rachel">Rachel (neutral)</option>
+  </select>
 
-    <button id="micBtn">🎤 Speak Your Prompt</button>
-    <button id="startBtn">Start Story</button>
-    <button id="resumeBtn">Resume Last Story</button>
+  <!-- Start Button -->
+  <button id="startBtn">Start Learning</button>
 
-    <div id="storyOutput"></div>
-  </div>
+  <!-- Story Output Area -->
+  <div id="storyOutput"></div>
 
   <script>
-    // Local memory + mic support
-    const micBtn = document.getElementById('micBtn');
-    const promptBox = document.getElementById('prompt');
-
-    let recognition;
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognition = new SpeechRecognition();
-      recognition.lang = 'en-US';
-      recognition.interimResults = false;
-      recognition.continuous = false;
-
-      recognition.onresult = function (event) {
-        const speechResult = event.results[0][0].transcript;
-        promptBox.value = speechResult;
-      };
-
-      recognition.onerror = function (event) {
-        alert("Speech recognition error: " + event.error);
-      };
-    } else {
-      micBtn.disabled = true;
-      micBtn.textContent = "🎤 Not supported in this browser";
-    }
-
-    micBtn.addEventListener('click', () => {
-      if (recognition) {
-        recognition.start();
-        micBtn.textContent = "🎤 Listening...";
-        setTimeout(() => micBtn.textContent = "🎤 Speak Your Prompt", 3000);
-      }
-    });
-
     document.getElementById("startBtn").onclick = async () => {
+      const module = document.getElementById("module").value;
       const voice = document.getElementById("voice").value;
-      const prompt = document.getElementById("prompt").value;
-      localStorage.setItem("lastPrompt", prompt);
-      localStorage.setItem("lastVoice", voice);
-      alert("Story request sent for: " + prompt + "\nVoice: " + voice);
-    };
 
-    document.getElementById("resumeBtn").onclick = () => {
-      const lastPrompt = localStorage.getItem("lastPrompt");
-      const lastVoice = localStorage.getItem("lastVoice");
-      if (lastPrompt) {
-        alert("Resuming last story: " + lastPrompt + "\nVoice: " + lastVoice);
-      } else {
-        alert("No previous story found.");
-      }
+      const body = {
+        module,
+        userName: "Friend",
+        language: "English",
+        level: "Beginner",
+        voice
+      };
+
+      const res = await fetch("/generate-story", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+
+      const data = await res.json();
+      document.getElementById("storyOutput").textContent = data.story || "Oops! Something went wrong.";
     };
   </script>
 </body>
