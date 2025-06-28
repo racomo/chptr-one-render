@@ -11,4 +11,3 @@
     "dotenv": "^16.0.3"
   }
 }
-Add package.json to fix Render deployment
