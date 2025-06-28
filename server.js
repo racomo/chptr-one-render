@@ -10,28 +10,40 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 app.use(express.static(path.join(__dirname)));
 app.use(express.json());
 
-// Serve index.html
+// Serve the frontend
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Map learning modules to descriptive prompts
+const modulePrompts = {
+  what_is_ai: "Explain what Artificial Intelligence is in simple terms. Use relatable examples and be friendly.",
+  problem_solving: "Describe how AI can be used to solve everyday problems, from navigation to health and beyond.",
+  real_world: "Share real-world examples of AI that people use today, like recommendation systems or voice assistants.",
+  machine_learning: "Introduce the concept of machine learning and how AI improves through data and feedback.",
+  neural_networks: "Explain how neural networks mimic the human brain to perform tasks like image recognition.",
+  implications: "Talk about the ethical implications of AI and how it can affect jobs, bias, and privacy."
+};
+
 // Generate story using OpenAI
 app.post('/generate-story', async (req, res) => {
   try {
-    const { prompt, userName, language, level, voice } = req.body;
+    const { module, userName, language, level, voice } = req.body;
 
     const systemPrompt = `
-You are the narrator of a story that introduces AI. Use the user's name (${userName}), speak in ${language}, and match the user's level (${level}).
-Keep it engaging and friendly.
+You are the narrator of an engaging AI lesson. The user is called ${userName}, speaks ${language}, and is currently at a ${level} level.
+Adapt the tone accordingly. The topic is: ${module}.
 `;
+
+    const userPrompt = modulePrompts[module] || "Explain something interesting about AI.";
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: prompt }
+        { role: "user", content: userPrompt }
       ],
-      max_tokens: 400,
+      max_tokens: 600,
       temperature: 0.7
     });
 
@@ -43,7 +55,7 @@ Keep it engaging and friendly.
   }
 });
 
-// Narrate story using ElevenLabs
+// Narrate using ElevenLabs
 app.post('/narrate', async (req, res) => {
   const { text, voice } = req.body;
 
