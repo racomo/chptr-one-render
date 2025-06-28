@@ -87,7 +87,10 @@
   <label for="prompt">📚 What do you want to learn today?</label>
   <textarea id="prompt" rows="4" placeholder="Type your question or topic..."></textarea>
 
-  <!-- Buttons -->
+  <!-- Microphone Button (new) -->
+  <button id="micBtn">🎤 Speak Your Prompt</button>
+
+  <!-- Control Buttons -->
   <button id="startBtn">Start Story</button>
   <button id="resumeBtn">Resume Last Story</button>
 
@@ -113,6 +116,40 @@
         alert("No previous story found.");
       }
     };
+
+    // Microphone speech-to-text logic
+    const micBtn = document.getElementById('micBtn');
+    const promptBox = document.getElementById('prompt');
+
+    let recognition;
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SpeechRecognition();
+      recognition.lang = 'en-US';
+      recognition.interimResults = false;
+      recognition.continuous = false;
+
+      recognition.onresult = function (event) {
+        const speechResult = event.results[0][0].transcript;
+        promptBox.value = speechResult;
+      };
+
+      recognition.onerror = function (event) {
+        alert("Speech recognition error: " + event.error);
+      };
+    } else {
+      micBtn.disabled = true;
+      micBtn.textContent = "🎤 Not supported in this browser";
+      console.warn("Speech recognition not supported");
+    }
+
+    micBtn.addEventListener('click', () => {
+      if (recognition) {
+        recognition.start();
+        micBtn.textContent = "🎤 Listening...";
+        setTimeout(() => micBtn.textContent = "🎤 Speak Your Prompt", 3000);
+      }
+    });
   </script>
 </body>
 </html>
