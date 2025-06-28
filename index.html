@@ -2,122 +2,108 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Chptr One</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chptr One – AI Fluency Without Fear</title>
 
-  <!-- Brand Font + Styles -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@500&display=swap" rel="stylesheet">
+
+  <!-- Style -->
   <style>
     body {
       font-family: 'Inter', sans-serif;
-      background: #fefbf6;
+      background: linear-gradient(135deg, #f8e9d2, #fff6ec);
       color: #1a1a1a;
       padding: 2rem;
-      max-width: 600px;
-      margin: auto;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
-    .chptr-one-equity-message {
-      background: #fff3d6;
-      border-left: 6px solid #f4ae3f;
-      padding: 1.5rem;
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+      text-align: center;
+    }
+
+    .tagline {
+      font-size: 1rem;
+      color: #444;
+      text-align: center;
       margin-bottom: 2rem;
-      border-radius: 8px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.04);
+    }
+
+    .content {
+      background: #ffffff;
+      padding: 2rem;
+      border-radius: 16px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
+      max-width: 600px;
+      width: 100%;
     }
 
     label {
       font-weight: 600;
-      margin-bottom: 0.5rem;
+      display: block;
+      margin: 1rem 0 0.5rem;
     }
 
-    select, textarea {
-      padding: 0.75rem;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 1rem;
-      margin-bottom: 1rem;
+    select, textarea, button {
       width: 100%;
+      font-size: 1rem;
+      padding: 0.75rem;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      margin-bottom: 1rem;
     }
 
     button {
-      background: #f4ae3f;
+      background-color: #f4ae3f;
       color: #1a1a1a;
       font-weight: bold;
-      padding: 0.75rem 1rem;
-      border: none;
-      border-radius: 6px;
       cursor: pointer;
-      margin-bottom: 1rem;
-      width: 100%;
+      transition: background 0.3s;
     }
 
     button:hover {
-      background: #e6a21f;
+      background-color: #e6a21f;
     }
 
     #storyOutput {
-      margin-top: 2rem;
-      background: #fff;
-      padding: 1.25rem;
-      border-radius: 6px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      margin-top: 1rem;
+      background: #fefbf6;
+      padding: 1rem;
+      border-radius: 8px;
+      font-style: italic;
     }
   </style>
 </head>
 
 <body>
-  <section class="chptr-one-equity-message">
-    <h1>Welcome to Chptr One</h1>
-    <p>
-      🚺 <strong>Danish women use AI 20% less than men.</strong><br><br>
-      We’re here to change that. Chptr One is a voice-first learning experience designed to make AI feel accessible, inclusive, and empowering — for everyone.<br><br>
-      Whether you’re a total beginner or already exploring AI, we meet you where you are. No shame. No jargon. Just support.
-    </p>
-  </section>
+  <h1>Chptr One</h1>
+  <p class="tagline">AI fluency without fear. A voice-first experience that meets you where you are.</p>
 
-  <!-- Voice Selection -->
-  <label for="voice">🎙️ Choose your narrator voice:</label>
-  <select id="voice" name="voice">
-    <option value="maggie">Maggie (warm & clear)</option>
-    <option value="rachel">Rachel (neutral)</option>
-  </select>
+  <div class="content">
+    <label for="voice">🎙️ Choose your narrator voice:</label>
+    <select id="voice">
+      <option value="maggie">Maggie (warm & clear)</option>
+      <option value="rachel">Rachel (neutral)</option>
+    </select>
 
-  <!-- Prompt Input -->
-  <label for="prompt">📚 What do you want to learn today?</label>
-  <textarea id="prompt" rows="4" placeholder="Type your question or topic..."></textarea>
+    <label for="prompt">📚 What do you want to learn today?</label>
+    <textarea id="prompt" rows="4" placeholder="Speak or type your question..."></textarea>
 
-  <!-- Microphone Button (new) -->
-  <button id="micBtn">🎤 Speak Your Prompt</button>
+    <button id="micBtn">🎤 Speak Your Prompt</button>
+    <button id="startBtn">Start Story</button>
+    <button id="resumeBtn">Resume Last Story</button>
 
-  <!-- Control Buttons -->
-  <button id="startBtn">Start Story</button>
-  <button id="resumeBtn">Resume Last Story</button>
-
-  <!-- Story Output -->
-  <div id="storyOutput"></div>
+    <div id="storyOutput"></div>
+  </div>
 
   <script>
-    // Placeholder logic: will be replaced with real fetch + audio next
-    document.getElementById("startBtn").onclick = () => {
-      const voice = document.getElementById("voice").value;
-      const prompt = document.getElementById("prompt").value;
-      localStorage.setItem("lastPrompt", prompt);
-      localStorage.setItem("lastVoice", voice);
-      alert("Story request sent for: " + prompt + "\nVoice: " + voice);
-    };
-
-    document.getElementById("resumeBtn").onclick = () => {
-      const lastPrompt = localStorage.getItem("lastPrompt");
-      const lastVoice = localStorage.getItem("lastVoice");
-      if (lastPrompt) {
-        alert("Resuming last story: " + lastPrompt + "\nVoice: " + lastVoice);
-      } else {
-        alert("No previous story found.");
-      }
-    };
-
-    // Microphone speech-to-text logic
+    // Local memory + mic support
     const micBtn = document.getElementById('micBtn');
     const promptBox = document.getElementById('prompt');
 
@@ -140,7 +126,6 @@
     } else {
       micBtn.disabled = true;
       micBtn.textContent = "🎤 Not supported in this browser";
-      console.warn("Speech recognition not supported");
     }
 
     micBtn.addEventListener('click', () => {
@@ -150,6 +135,24 @@
         setTimeout(() => micBtn.textContent = "🎤 Speak Your Prompt", 3000);
       }
     });
+
+    document.getElementById("startBtn").onclick = async () => {
+      const voice = document.getElementById("voice").value;
+      const prompt = document.getElementById("prompt").value;
+      localStorage.setItem("lastPrompt", prompt);
+      localStorage.setItem("lastVoice", voice);
+      alert("Story request sent for: " + prompt + "\nVoice: " + voice);
+    };
+
+    document.getElementById("resumeBtn").onclick = () => {
+      const lastPrompt = localStorage.getItem("lastPrompt");
+      const lastVoice = localStorage.getItem("lastVoice");
+      if (lastPrompt) {
+        alert("Resuming last story: " + lastPrompt + "\nVoice: " + lastVoice);
+      } else {
+        alert("No previous story found.");
+      }
+    };
   </script>
 </body>
 </html>
