@@ -3,9 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Chptr One – Learn AI Without Fear</title>
-
-  <!-- Font & Brand Styles -->
+  <title>Chptr One – Learn AI by Listening</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
     body {
@@ -13,10 +11,13 @@
       background: #fefbf6;
       color: #1a1a1a;
       padding: 2rem;
-      max-width: 600px;
+      max-width: 700px;
       margin: auto;
     }
-
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
     .chptr-one-equity-message {
       background: #fff3d6;
       border-left: 6px solid #f4ae3f;
@@ -25,27 +26,19 @@
       border-radius: 8px;
       box-shadow: 0 4px 8px rgba(0,0,0,0.04);
     }
-
-    h1 {
-      font-size: 1.8rem;
-      margin-bottom: 0.5rem;
-    }
-
     label {
       font-weight: 600;
-      margin-top: 1.25rem;
+      margin-top: 1rem;
       display: block;
     }
-
     select {
       padding: 0.75rem;
       border: 1px solid #ccc;
       border-radius: 6px;
       font-size: 1rem;
       width: 100%;
-      margin-top: 0.5rem;
+      margin-bottom: 1rem;
     }
-
     button {
       background: #f4ae3f;
       color: #1a1a1a;
@@ -54,14 +47,12 @@
       border: none;
       border-radius: 6px;
       cursor: pointer;
-      margin-top: 1.5rem;
+      margin-top: 0.5rem;
       width: 100%;
     }
-
     button:hover {
       background: #e6a21f;
     }
-
     #storyOutput {
       margin-top: 2rem;
       background: #fff;
@@ -78,55 +69,82 @@
     <p>
       🚺 <strong>Danish women use AI 20% less than men.</strong><br><br>
       We’re here to change that. Chptr One is a voice-first learning experience designed to make AI feel accessible, inclusive, and empowering — for everyone.<br><br>
-      Whether you’re just starting or deep into your AI journey, we’ll meet you exactly where you are. No shame. No jargon. Just support.
+      Whether you're just getting curious or already learning, this platform grows with you.
     </p>
   </section>
 
-  <!-- Learning Journey Selector -->
-  <label for="module">📘 Where are you in your AI journey?</label>
-  <select id="module" name="module">
-    <option value="what_is_ai">What is AI?</option>
-    <option value="problem_solving">Solving problems with AI</option>
-    <option value="real_world">Real-world AI</option>
-    <option value="machine_learning">Machine learning</option>
-    <option value="neural_networks">Neural networks</option>
-    <option value="implications">Implications & Ethics</option>
-  </select>
-
   <!-- Voice Selection -->
   <label for="voice">🎙️ Choose your narrator voice:</label>
-  <select id="voice" name="voice">
+  <select id="voice">
     <option value="maggie">Maggie (warm & clear)</option>
     <option value="rachel">Rachel (neutral)</option>
   </select>
 
-  <!-- Start Button -->
-  <button id="startBtn">Start Learning</button>
+  <!-- Learning Module -->
+  <label for="module">📚 Select a module to begin:</label>
+  <select id="module">
+    <option value="intro_to_ai">1. What is AI?</option>
+    <option value="real_world_use">2. AI in Daily Life</option>
+    <option value="machine_learning">3. What is Machine Learning?</option>
+    <option value="neural_networks">4. Understanding Neural Networks</option>
+    <option value="ai_limits">5. What AI Can’t Do</option>
+    <option value="ethics_and_bias">6. Ethics and Bias in AI</option>
+    <option value="ai_and_future">7. AI & the Future of Work</option>
+  </select>
 
-  <!-- Story Output Area -->
+  <!-- Buttons -->
+  <button id="startBtn">Start Listening</button>
+  <button id="resumeBtn">Resume Previous</button>
+
+  <!-- Output -->
   <div id="storyOutput"></div>
 
   <script>
+    const modulePrompts = {
+      intro_to_ai: "Explain what artificial intelligence is in simple terms, using real-world comparisons.",
+      real_world_use: "Give examples of how AI is already used in daily life, from phones to healthcare.",
+      machine_learning: "What is machine learning? Explain how it works and why it matters.",
+      neural_networks: "What are neural networks, and how do they mimic the human brain?",
+      ai_limits: "Explain the limitations of AI. What are things AI cannot do yet?",
+      ethics_and_bias: "Introduce the topic of ethics in AI. How does bias enter algorithms?",
+      ai_and_future: "What impact will AI have on jobs and the future of work?"
+    };
+
     document.getElementById("startBtn").onclick = async () => {
-      const module = document.getElementById("module").value;
+      const selectedModule = document.getElementById("module").value;
+      const prompt = modulePrompts[selectedModule];
       const voice = document.getElementById("voice").value;
 
-      const body = {
-        module,
-        userName: "Friend",
-        language: "English",
-        level: "Beginner",
-        voice
-      };
+      // Save progress
+      localStorage.setItem("lastModule", selectedModule);
+      localStorage.setItem("lastVoice", voice);
 
       const res = await fetch("/generate-story", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
+        body: JSON.stringify({
+          prompt: prompt,
+          userName: "friend",
+          language: "English",
+          level: "beginner",
+          voice: voice
+        })
       });
 
       const data = await res.json();
-      document.getElementById("storyOutput").textContent = data.story || "Oops! Something went wrong.";
+      document.getElementById("storyOutput").textContent = data.story;
+    };
+
+    document.getElementById("resumeBtn").onclick = () => {
+      const lastModule = localStorage.getItem("lastModule");
+      const lastVoice = localStorage.getItem("lastVoice");
+      if (lastModule && lastVoice) {
+        document.getElementById("module").value = lastModule;
+        document.getElementById("voice").value = lastVoice;
+        document.getElementById("startBtn").click();
+      } else {
+        alert("No previous session found.");
+      }
     };
   </script>
 </body>
