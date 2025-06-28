@@ -4,26 +4,64 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Chptr One</title>
+
+  <!-- Brand Font + Styles -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
     body {
-      font-family: sans-serif;
+      font-family: 'Inter', sans-serif;
+      background: #fefbf6;
+      color: #1a1a1a;
       padding: 2rem;
       max-width: 600px;
       margin: auto;
     }
+
     .chptr-one-equity-message {
-      background-color: #fff7e6;
-      border-left: 6px solid #f5a623;
-      padding: 1rem;
+      background: #fff3d6;
+      border-left: 6px solid #f4ae3f;
+      padding: 1.5rem;
       margin-bottom: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.04);
     }
-    label, select, button, textarea {
-      display: block;
-      width: 100%;
+
+    label {
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    select, textarea {
+      padding: 0.75rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 1rem;
       margin-bottom: 1rem;
+      width: 100%;
     }
+
     button {
-      padding: 0.6rem;
+      background: #f4ae3f;
+      color: #1a1a1a;
+      font-weight: bold;
+      padding: 0.75rem 1rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 1rem;
+      width: 100%;
+    }
+
+    button:hover {
+      background: #e6a21f;
+    }
+
+    #storyOutput {
+      margin-top: 2rem;
+      background: #fff;
+      padding: 1.25rem;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
     }
   </style>
 </head>
@@ -53,11 +91,11 @@
   <button id="startBtn">Start Story</button>
   <button id="resumeBtn">Resume Last Story</button>
 
-  <!-- Placeholder for story output -->
+  <!-- Story Output -->
   <div id="storyOutput"></div>
 
   <script>
-    // Placeholder logic: to be replaced with full JS in Phase 2b
+    // Placeholder logic: will be replaced with real fetch + audio next
     document.getElementById("startBtn").onclick = () => {
       const voice = document.getElementById("voice").value;
       const prompt = document.getElementById("prompt").value;
