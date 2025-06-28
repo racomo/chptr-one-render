@@ -1,19 +1,80 @@
-
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Chptr One</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 2rem;
+      max-width: 600px;
+      margin: auto;
+    }
+    .chptr-one-equity-message {
+      background-color: #fff7e6;
+      border-left: 6px solid #f5a623;
+      padding: 1rem;
+      margin-bottom: 2rem;
+    }
+    label, select, button, textarea {
+      display: block;
+      width: 100%;
+      margin-bottom: 1rem;
+    }
+    button {
+      padding: 0.6rem;
+    }
+  </style>
 </head>
+
 <body>
-  <h1>Welcome to Chptr One</h1>
-  <p>This is your AI-powered, voice-first learning experience. Get ready to explore.</p>
+  <section class="chptr-one-equity-message">
+    <h1>Welcome to Chptr One</h1>
+    <p>
+      🚺 <strong>Danish women use AI 20% less than men.</strong><br><br>
+      We’re here to change that. Chptr One is a voice-first learning experience designed to make AI feel accessible, inclusive, and empowering — for everyone.<br><br>
+      Whether you’re a total beginner or already exploring AI, we meet you where you are. No shame. No jargon. Just support.
+    </p>
+  </section>
+
+  <!-- Voice Selection -->
+  <label for="voice">🎙️ Choose your narrator voice:</label>
+  <select id="voice" name="voice">
+    <option value="maggie">Maggie (warm & clear)</option>
+    <option value="rachel">Rachel (neutral)</option>
+  </select>
+
+  <!-- Prompt Input -->
+  <label for="prompt">📚 What do you want to learn today?</label>
+  <textarea id="prompt" rows="4" placeholder="Type your question or topic..."></textarea>
+
+  <!-- Buttons -->
+  <button id="startBtn">Start Story</button>
+  <button id="resumeBtn">Resume Last Story</button>
+
+  <!-- Placeholder for story output -->
+  <div id="storyOutput"></div>
+
+  <script>
+    // Placeholder logic: to be replaced with full JS in Phase 2b
+    document.getElementById("startBtn").onclick = () => {
+      const voice = document.getElementById("voice").value;
+      const prompt = document.getElementById("prompt").value;
+      localStorage.setItem("lastPrompt", prompt);
+      localStorage.setItem("lastVoice", voice);
+      alert("Story request sent for: " + prompt + "\nVoice: " + voice);
+    };
+
+    document.getElementById("resumeBtn").onclick = () => {
+      const lastPrompt = localStorage.getItem("lastPrompt");
+      const lastVoice = localStorage.getItem("lastVoice");
+      if (lastPrompt) {
+        alert("Resuming last story: " + lastPrompt + "\nVoice: " + lastVoice);
+      } else {
+        alert("No previous story found.");
+      }
+    };
+  </script>
 </body>
 </html>
-<section class="chptr-one-equity-message">
-  <h1>Welcome to Chptr One</h1>
-  <p>
-    🚺 <strong>Danish women use AI 20% less than men.</strong><br><br>
-    We’re here to change that. Chptr One is a voice-first learning experience designed to make AI feel accessible, inclusive, and empowering — for everyone.<br><br>
-    Whether you’re a total beginner or already exploring AI, we meet you where you are. No shame. No jargon. Just support.
-  </p>
-</section>
