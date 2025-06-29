@@ -21,21 +21,18 @@ app.get('/start', (req, res) => {
   res.sendFile(path.join(__dirname, 'start.html'));
 });
 
-// ✅ OpenAI endpoint — accepts a freeform prompt
+// ✅ OpenAI endpoint — explicit language and level handling
 app.post('/api/generate-story', async (req, res) => {
   try {
-    let { prompt } = req.body;
+    const { level, language } = req.body;
 
-    if (!prompt || typeof prompt !== 'string') {
-      return res.status(400).json({ error: 'Missing or invalid prompt.' });
+    if (!level || !language) {
+      return res.status(400).json({ error: 'Missing level or language.' });
     }
 
-    // Add clarification to prompt if user requests non-English language
-    if (prompt.toLowerCase().includes('in french')) {
-      prompt += " Please reply in French.";
-    }
+    const prompt = `You are a friendly storyteller. Explain what AI is to a ${level} in ${language}. Use simple, relatable language and return your story in ${language} only.`;
 
-    console.log('🧠 Prompt received:', prompt);
+    console.log('📥 Prompt:', prompt);
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4",
@@ -43,8 +40,6 @@ app.post('/api/generate-story', async (req, res) => {
       max_tokens: 600,
       temperature: 0.7
     });
-
-    console.log('🧠 Raw GPT response:', JSON.stringify(completion, null, 2));
 
     const result = completion?.choices?.[0]?.message?.content?.trim();
 
@@ -60,7 +55,7 @@ app.post('/api/generate-story', async (req, res) => {
   }
 });
 
-// ✅ ElevenLabs proxy — keep API key secure
+// ✅ ElevenLabs proxy — text-to-speech
 app.post('/api/narrate', async (req, res) => {
   const { text, voiceId } = req.body;
 
