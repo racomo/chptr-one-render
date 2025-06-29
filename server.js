@@ -24,11 +24,18 @@ app.get('/start', (req, res) => {
 // ✅ OpenAI endpoint — accepts a freeform prompt
 app.post('/api/generate-story', async (req, res) => {
   try {
-    const { prompt } = req.body;
+    let { prompt } = req.body;
 
     if (!prompt || typeof prompt !== 'string') {
       return res.status(400).json({ error: 'Missing or invalid prompt.' });
     }
+
+    // Add clarification to prompt if user requests non-English language
+    if (prompt.toLowerCase().includes('in french')) {
+      prompt += " Please reply in French.";
+    }
+
+    console.log('🧠 Prompt received:', prompt);
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4",
@@ -37,7 +44,9 @@ app.post('/api/generate-story', async (req, res) => {
       temperature: 0.7
     });
 
-    const result = completion?.choices?.[0]?.message?.content;
+    console.log('🧠 Raw GPT response:', JSON.stringify(completion, null, 2));
+
+    const result = completion?.choices?.[0]?.message?.content?.trim();
 
     if (!result) {
       console.error("❌ No story returned from OpenAI");
