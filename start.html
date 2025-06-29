@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Start Your AI Story</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="hero" style="max-width: 600px; margin: 2rem auto; text-align: center;">
+    <h2>🎙️ Begin Your AI Journey</h2>
+    <form id="story-form">
+      <input type="text" id="userName" placeholder="Your name" required /><br><br>
+
+      <select id="language" required>
+        <option value="">Select language</option>
+        <option value="English">English</option>
+        <option value="Spanish">Spanish</option>
+      </select><br><br>
+
+      <select id="level" required>
+        <option value="">Select your level</option>
+        <option value="beginner">Beginner</option>
+        <option value="intermediate">Intermediate</option>
+        <option value="expert">Expert</option>
+      </select><br><br>
+
+      <select id="voice" required>
+        <option value="">Select voice</option>
+        <option value="EXAVITQu4vr4xnSDxMaL">Rachel (Example Female)</option>
+        <option value="21m00Tcm4TlvDq8ikWAM">Default Male</option>
+      </select><br><br>
+
+      <button type="submit" class="cta-btn">Generate & Listen →</button>
+    </form>
+
+    <div id="response" style="margin-top: 2rem;"></div>
+    <audio id="audio" controls style="margin-top: 1rem; display: none;"></audio>
+  </main>
+
+  <script>
+    const form = document.getElementById('story-form');
+    const audio = document.getElementById('audio');
+    const responseBox = document.getElementById('response');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const userName = document.getElementById('userName').value;
+      const language = document.getElementById('language').value;
+      const level = document.getElementById('level').value;
+      const voice = document.getElementById('voice').value;
+      const module = "what_is_ai";
+
+      responseBox.innerText = "⏳ Generating your story...";
+      audio.style.display = "none";
+
+      try {
+        const storyRes = await fetch('/generate-story', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userName, language, level, module, voice })
+        });
+
+        const { story } = await storyRes.json();
+        responseBox.innerText = story;
+
+        const audioRes = await fetch('/narrate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: story, voice })
+        });
+
+        const audioBlob = await audioRes.blob();
+        audio.src = URL.createObjectURL(audioBlob);
+        audio.style.display = 'block';
+        audio.play();
+
+      } catch (err) {
+        console.error(err);
+        responseBox.innerText = "⚠️ Error: " + err.message;
+      }
+    });
+  </script>
+</body>
+</html>
