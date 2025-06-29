@@ -1,135 +1,110 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chptr One — AI Fluency Without Fear</title>
-  
-  <!-- Fonts & Style -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-  <style>
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: #fefbf6;
-      color: #1a1a1a;
-      margin: 0;
-      padding: 0;
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chptr One — AI Fluency Without Fear</title>
 
-    .container {
-      max-width: 720px;
-      margin: 0 auto;
-      padding: 2rem;
-    }
+    <!-- EmpowHer Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Inter:wght@400;600&display=swap" rel="stylesheet" />
 
-    .hero {
-      background: #fff3d6;
-      padding: 2rem;
-      border-left: 6px solid #f4ae3f;
-      border-radius: 8px;
-      margin-bottom: 2rem;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    }
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <div class="brand">
+        <h1>Chptr One</h1>
+        <p class="tagline">AI Fluency Without Fear — by EmpowHer</p>
+      </div>
+    </header>
 
-    h1 {
-      font-size: 2rem;
-      margin-bottom: 1rem;
-    }
+    <main>
+      <section class="hero">
+        <h2>🎙️ Start Listening, Start Learning</h2>
+        <p>
+          A voice-first, personalized experience that meets you where you are. Whether you're just starting out or already confident with AI — this is your space to grow.
+        </p>
+        <a class="cta-btn" href="/start" target="_blank">Launch Chptr One →</a>
+      </section>
 
-    p {
-      font-size: 1.1rem;
-      line-height: 1.6;
-    }
+      <section class="features">
+        <h3>💡 What You’ll Learn</h3>
+        <ul>
+          <li>What AI really is — no fluff</li>
+          <li>How it’s already part of your life</li>
+          <li>How to use AI without fear or shame</li>
+        </ul>
+      </section>
+    </main>
 
-    label {
-      display: block;
-      margin-top: 1rem;
-      margin-bottom: 0.5rem;
-      font-weight: 600;
-    }
-
-    select, button {
-      width: 100%;
-      padding: 0.75rem;
-      font-size: 1rem;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      margin-bottom: 1rem;
-    }
-
-    button {
-      background-color: #f4ae3f;
-      color: #1a1a1a;
-      font-weight: bold;
-      cursor: pointer;
-      border: none;
-    }
-
-    button:hover {
-      background-color: #e6a21f;
-    }
-
-    #storyOutput {
-      margin-top: 2rem;
-      background: white;
-      padding: 1rem;
-      border-radius: 6px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-    }
-  </style>
-</head>
-
-<body>
-  <div class="container">
-    <div class="hero">
-      <h1>Welcome to Chptr One</h1>
-      <p>
-        🚺 <strong>Danish women use AI 20% less than men.</strong><br /><br />
-        We’re here to change that. Chptr One is a voice-first AI learning space designed to feel safe, empowering, and inclusive.<br /><br />
-        Choose your starting point. No jargon. No shame. Just growth.
-      </p>
-    </div>
-
-    <label for="level">💡 Choose your level:</label>
-    <select id="level">
-      <option value="beginner">Beginner ("I'm just getting started")</option>
-      <option value="intermediate">Intermediate ("I get the basics")</option>
-      <option value="advanced">Advanced ("I want to go deeper")</option>
-    </select>
-
-    <label for="voice">🎙️ Choose your narrator voice:</label>
-    <select id="voice">
-      <option value="maggie">Maggie (warm & clear)</option>
-      <option value="rachel">Rachel (neutral)</option>
-    </select>
-
-    <button id="startBtn">Start Your AI Story</button>
-    <button id="resumeBtn">Resume Last Session</button>
-
-    <div id="storyOutput"></div>
-  </div>
-
-  <script>
-    document.getElementById("startBtn").onclick = () => {
-      const voice = document.getElementById("voice").value;
-      const level = document.getElementById("level").value;
-
-      localStorage.setItem("lastVoice", voice);
-      localStorage.setItem("lastLevel", level);
-
-      alert("Your personalized AI story will begin at level: " + level + " with voice: " + voice);
-      // Future: Call backend to generate + narrate
-    };
-
-    document.getElementById("resumeBtn").onclick = () => {
-      const lastVoice = localStorage.getItem("lastVoice");
-      const lastLevel = localStorage.getItem("lastLevel");
-      if (lastVoice && lastLevel) {
-        alert("Resuming with voice: " + lastVoice + " at level: " + lastLevel);
-      } else {
-        alert("No previous session found.");
-      }
-    };
-  </script>
-</body>
+    <footer>
+      <p>© 2025 EmpowHer by CORDERO MGMT</p>
+    </footer>
+  </body>
 </html>
+/* Typography & Colors */
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  background-color: #fefcf9;
+  color: #111;
+  line-height: 1.6;
+}
+
+h1, h2, h3 {
+  font-family: 'Playfair Display', serif;
+  color: #000;
+  margin-bottom: 0.5rem;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Layout */
+header,
+footer {
+  text-align: center;
+  padding: 1.5rem 2rem;
+  background-color: #f9f4ea;
+}
+
+main {
+  max-width: 700px;
+  margin: 2rem auto;
+  padding: 0 1.5rem;
+}
+
+/* Hero Section */
+.hero {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.cta-btn {
+  display: inline-block;
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  background: #cfb87c;
+  color: #000;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: background 0.3s ease;
+}
+
+.cta-btn:hover {
+  background: #bfa165;
+}
+
+/* Features List */
+.features ul {
+  list-style-type: '✨ ';
+  padding-left: 1rem;
+}
+
+footer {
+  font-size: 0.9rem;
+  color: #555;
+}
