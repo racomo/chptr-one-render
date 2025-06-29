@@ -7,7 +7,9 @@ require('dotenv').config();
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// ✅ Serve static files (CSS, JS, images, etc.)
 app.use(express.static(path.join(__dirname)));
+
 app.use(express.json());
 
 // Serve the frontend
