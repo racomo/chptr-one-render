@@ -93,8 +93,6 @@
           return;
         }
 
-        const prompt = `Explain what AI is to a ${level} in ${language} using friendly storytelling.`;
-
         try {
           outputText.textContent = '🧠 Generating story...';
           generateButton.disabled = true;
@@ -102,7 +100,7 @@
           const gptResponse = await fetch('/api/generate-story', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt })
+            body: JSON.stringify({ language, level })
           });
 
           const gptData = await gptResponse.json();
