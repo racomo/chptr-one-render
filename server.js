@@ -12,7 +12,6 @@ const openai = new OpenAI({
 app.use(express.static(path.join(__dirname)));
 app.use(express.json());
 
-// ✅ Serve frontend
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -21,27 +20,22 @@ app.get('/start', (req, res) => {
   res.sendFile(path.join(__dirname, 'start.html'));
 });
 
-// ✅ OpenAI endpoint — explicit language and level handling
 app.post('/api/generate-story', async (req, res) => {
   try {
-    const { level, language } = req.body;
+    const { prompt } = req.body;
 
-    if (!level || !language) {
-      return res.status(400).json({ error: 'Missing level or language.' });
+    if (!prompt || typeof prompt !== 'string') {
+      return res.status(400).json({ error: 'Missing or invalid prompt.' });
     }
 
-    const prompt = `You are a friendly storyteller. Explain what AI is to a ${level} in ${language}. Use simple, relatable language and return your story in ${language} only.`;
-
-    console.log('📥 Prompt:', prompt);
-
     const completion = await openai.chat.completions.create({
-      model: "gpt-4",
-      messages: [{ role: "user", content: prompt }],
-      max_tokens: 600,
+      model: 'gpt-4',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 1000,
       temperature: 0.7
     });
 
-    const result = completion?.choices?.[0]?.message?.content?.trim();
+    const result = completion?.choices?.[0]?.message?.content;
 
     if (!result) {
       console.error("❌ No story returned from OpenAI");
@@ -55,7 +49,6 @@ app.post('/api/generate-story', async (req, res) => {
   }
 });
 
-// ✅ ElevenLabs proxy — text-to-speech
 app.post('/api/narrate', async (req, res) => {
   const { text, voiceId } = req.body;
 
@@ -90,7 +83,6 @@ app.post('/api/narrate', async (req, res) => {
   }
 });
 
-// ✅ Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
