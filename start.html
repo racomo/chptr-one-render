@@ -1,17 +1,22 @@
-const elevenApiKey = 'YOUR_ELEVENLABS_API_KEY'; // Replace with your actual key
+const elevenApiKey = 'YOUR_ELEVENLABS_API_KEY'; // 🔐 Replace this with your real ElevenLabs API key
+
 const voiceSelect = document.getElementById('voiceSelect');
 const generateButton = document.getElementById('generateBtn');
 const audioPlayer = document.getElementById('audioPlayer');
 const outputText = document.getElementById('outputText');
 
-// Fetch and populate voice list from ElevenLabs
+// 🔁 Load available ElevenLabs voices dynamically
 async function loadVoices() {
+  voiceSelect.innerHTML = '<option disabled selected>Loading voices...</option>';
   try {
     const response = await fetch('https://api.elevenlabs.io/v1/voices', {
       headers: { 'xi-api-key': elevenApiKey }
     });
 
+    if (!response.ok) throw new Error(`Failed to fetch voices: ${response.statusText}`);
+
     const data = await response.json();
+    voiceSelect.innerHTML = ''; // Clear loading option
 
     data.voices.forEach(voice => {
       const option = document.createElement('option');
@@ -20,40 +25,49 @@ async function loadVoices() {
       voiceSelect.appendChild(option);
     });
   } catch (err) {
-    console.error('Failed to load voices:', err);
+    console.error('Voice loading error:', err);
+    voiceSelect.innerHTML = '<option disabled selected>Error loading voices</option>';
   }
 }
 
-// Generate and play audio
+// 🧠 Generate story and convert it to voice
 async function generateAudio() {
-  const userName = document.getElementById('userName').value || 'Friend';
   const language = document.getElementById('languageSelect').value;
   const level = document.getElementById('levelSelect').value;
   const voiceId = voiceSelect.value;
 
-  const prompt = `Explain what AI is to a ${level} in ${language} using friendly storytelling.`;
-
   if (!voiceId) {
-    outputText.textContent = 'Please select a voice.';
+    outputText.textContent = '⚠️ Please select a voice.';
     return;
   }
 
-  try {
-    outputText.textContent = 'Generating...';
+  const prompt = `Explain what AI is to a ${level} in ${language} using friendly storytelling.`;
 
-    // Step 1: Get the story from OpenAI
+  try {
+    outputText.textContent = '🧠 Generating your story...';
+
+    // Step 1: Call backend to get OpenAI-generated story
     const gptResponse = await fetch('/api/generate-story', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt })
     });
 
+    if (!gptResponse.ok) {
+      throw new Error(`OpenAI story generation failed: ${gptResponse.statusText}`);
+    }
+
     const gptData = await gptResponse.json();
     const story = gptData.text;
 
+    if (!story || typeof story !== 'string') {
+      outputText.textContent = '❌ No story returned.';
+      return;
+    }
+
     outputText.textContent = story;
 
-    // Step 2: Convert to speech with ElevenLabs
+    // Step 2: Convert text to audio via ElevenLabs
     const ttsResponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
       method: 'POST',
       headers: {
@@ -63,14 +77,17 @@ async function generateAudio() {
       body: JSON.stringify({
         text: story,
         model_id: 'eleven_monolingual_v1',
-        voice_settings: { stability: 0.5, similarity_boost: 0.5 }
+        voice_settings: {
+          stability: 0.4,
+          similarity_boost: 0.7
+        }
       })
     });
 
     if (!ttsResponse.ok) {
-      const error = await ttsResponse.json();
-      console.error('TTS Error:', error);
-      outputText.textContent = 'Voice generation failed.';
+      const errorDetails = await ttsResponse.json();
+      console.error('ElevenLabs TTS error:', errorDetails);
+      outputText.textContent = '❌ Voice generation failed.';
       return;
     }
 
@@ -79,12 +96,12 @@ async function generateAudio() {
     audioPlayer.src = audioUrl;
     audioPlayer.play();
   } catch (err) {
-    console.error('Error during generation:', err);
-    outputText.textContent = 'Something went wrong.';
+    console.error('❌ Error during generation:', err);
+    outputText.textContent = 'Something went wrong. Please try again.';
   }
 }
 
-// Wire up actions
+// 🚀 Initialize on page load
 window.onload = () => {
   loadVoices();
   generateButton.addEventListener('click', generateAudio);
