@@ -1,89 +1,91 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Start Your AI Story</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;700&display=swap" rel="stylesheet">
-</head>
-<body>
-  <main class="hero">
-    <h2>🎙️ Begin Your AI Journey</h2>
-    <form id="story-form">
-      <input type="text" id="userName" placeholder="Your name" required /><br>
+const elevenApiKey = 'YOUR_ELEVENLABS_API_KEY'; // Replace with your actual key
+const voiceSelect = document.getElementById('voiceSelect');
+const generateButton = document.getElementById('generateBtn');
+const audioPlayer = document.getElementById('audioPlayer');
+const outputText = document.getElementById('outputText');
 
-      <select id="language" required>
-        <option value="">Select language</option>
-        <option value="English">English</option>
-        <option value="Spanish">Spanish</option>
-        <option value="French">French</option>
-        <option value="Danish">Danish</option>
-      </select><br>
-
-      <select id="level" required>
-        <option value="">Select your level</option>
-        <option value="beginner">Beginner</option>
-        <option value="intermediate">Intermediate</option>
-        <option value="expert">Expert</option>
-      </select><br>
-
-      <select id="voice" required>
-        <option value="">Select voice</option>
-        <option value="EXAVITQu4vr4xnSDxMaL">Rachel (Example Female)</option>
-        <option value="21m00Tcm4TlvDq8ikWAM">Default Male</option>
-      </select><br>
-
-      <button type="submit" class="cta-btn">Generate & Listen →</button>
-    </form>
-
-    <div id="response" style="margin-top: 2rem;"></div>
-    <audio id="audio" controls style="margin-top: 1rem; display: none;"></audio>
-  </main>
-
-  <script>
-    const form = document.getElementById('story-form');
-    const audio = document.getElementById('audio');
-    const responseBox = document.getElementById('response');
-
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const userName = document.getElementById('userName').value;
-      const language = document.getElementById('language').value;
-      const level = document.getElementById('level').value;
-      const voice = document.getElementById('voice').value;
-      const module = "what_is_ai";
-
-      responseBox.innerText = "⏳ Generating your story...";
-      audio.style.display = "none";
-
-      try {
-        const storyRes = await fetch('/generate-story', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userName, language, level, module, voice })
-        });
-
-        const { story } = await storyRes.json();
-        responseBox.innerText = story;
-
-        const audioRes = await fetch('/narrate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: story, voice })
-        });
-
-        const audioBlob = await audioRes.blob();
-        audio.src = URL.createObjectURL(audioBlob);
-        audio.style.display = 'block';
-        audio.play();
-
-      } catch (err) {
-        console.error(err);
-        responseBox.innerText = "⚠️ Error: " + err.message;
-      }
+// Fetch and populate voice list from ElevenLabs
+async function loadVoices() {
+  try {
+    const response = await fetch('https://api.elevenlabs.io/v1/voices', {
+      headers: { 'xi-api-key': elevenApiKey }
     });
-  </script>
-</body>
-</html>
+
+    const data = await response.json();
+
+    data.voices.forEach(voice => {
+      const option = document.createElement('option');
+      option.value = voice.voice_id;
+      option.textContent = voice.name;
+      voiceSelect.appendChild(option);
+    });
+  } catch (err) {
+    console.error('Failed to load voices:', err);
+  }
+}
+
+// Generate and play audio
+async function generateAudio() {
+  const userName = document.getElementById('userName').value || 'Friend';
+  const language = document.getElementById('languageSelect').value;
+  const level = document.getElementById('levelSelect').value;
+  const voiceId = voiceSelect.value;
+
+  const prompt = `Explain what AI is to a ${level} in ${language} using friendly storytelling.`;
+
+  if (!voiceId) {
+    outputText.textContent = 'Please select a voice.';
+    return;
+  }
+
+  try {
+    outputText.textContent = 'Generating...';
+
+    // Step 1: Get the story from OpenAI
+    const gptResponse = await fetch('/api/generate-story', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt })
+    });
+
+    const gptData = await gptResponse.json();
+    const story = gptData.text;
+
+    outputText.textContent = story;
+
+    // Step 2: Convert to speech with ElevenLabs
+    const ttsResponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+      method: 'POST',
+      headers: {
+        'xi-api-key': elevenApiKey,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        text: story,
+        model_id: 'eleven_monolingual_v1',
+        voice_settings: { stability: 0.5, similarity_boost: 0.5 }
+      })
+    });
+
+    if (!ttsResponse.ok) {
+      const error = await ttsResponse.json();
+      console.error('TTS Error:', error);
+      outputText.textContent = 'Voice generation failed.';
+      return;
+    }
+
+    const audioBlob = await ttsResponse.blob();
+    const audioUrl = URL.createObjectURL(audioBlob);
+    audioPlayer.src = audioUrl;
+    audioPlayer.play();
+  } catch (err) {
+    console.error('Error during generation:', err);
+    outputText.textContent = 'Something went wrong.';
+  }
+}
+
+// Wire up actions
+window.onload = () => {
+  loadVoices();
+  generateButton.addEventListener('click', generateAudio);
+};
