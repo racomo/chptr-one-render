@@ -31,17 +31,22 @@ const modulePrompts = {
   implications: "Talk about the ethical implications of AI and how it can affect jobs, bias, and privacy."
 };
 
+// 🔹 TED-style intro per language
+const languageIntros = {
+  English: "Act like an accomplished speechwriter and public speaking coach. You mastered every precept from the book 'Talk like Ted'. Your expertise lies in crafting captivating and influential speeches, with a specialization in TED-style presentations. Your clients include executives, entrepreneurs, and thought leaders who seek to inspire and engage their audiences on global platforms. I am one of your clients, and here’s the needed context between angle brackets <>. <context>Learn about AI</context> Your objective is to help me create a public speaking script that resonates with the essence of a TED Talk. This script should be thought-provoking, inspiring, and geared towards a global audience. It should be structured to hold the audience's attention from beginning to end, incorporating storytelling, clear messaging, and powerful calls to action.",
+  Spanish: "Actúa como un experto en oratoria y presentaciones al estilo TED. Has perfeccionado cada principio del libro 'Talk like Ted'. Tu especialidad es crear discursos cautivadores e influyentes. Tus clientes incluyen ejecutivos, emprendedores y líderes de pensamiento que buscan inspirar y conectar con audiencias globales. Yo soy uno de tus clientes, y aquí está el contexto entre corchetes <>. <context>Aprender sobre la IA</context> Tu objetivo es ayudarme a crear un guion que refleje el estilo TED. Debe ser inspirador, claro y adaptado a un público internacional.",
+  French: "Agis comme un expert en discours et en présentations TED. Tu maîtrises tous les principes du livre 'Talk like Ted'. Ton expertise est de créer des discours captivants et influents. Tes clients sont des dirigeants, entrepreneurs et leaders d'opinion. Je suis l’un d’eux. Voici le contexte entre <>. <context>Découvrir l’IA</context>. Ton objectif est de rédiger un script qui capte l’attention, inspire et reste accessible.",
+  Danish: "Opfør dig som en ekspert i offentlig tale og TED-lignende oplæg. Du mestrer alt fra 'Talk like Ted'. Dine kunder er ledere, iværksættere og formidlere, der ønsker at engagere et globalt publikum. Jeg er en af dine kunder. Her er konteksten mellem <>. <context>Lær om AI</context>. Dit mål er at skabe et manuskript, der inspirerer og vækker eftertanke."
+};
+
 // 🔹 Generate story using OpenAI
 app.post('/generate-story', async (req, res) => {
   try {
     const { module, userName, language, level, voice } = req.body;
 
-    const systemPrompt = `
-You are the narrator of an engaging AI lesson. The user is called ${userName}, speaks ${language}, and is currently at a ${level} level.
-Adapt the tone accordingly. The topic is: ${module}.
-`;
+    const systemPrompt = languageIntros[language] || languageIntros['English'];
 
-    const userPrompt = modulePrompts[module] || "Explain something interesting about AI.";
+    const userPrompt = `Generate a TED-style story appropriate for a ${level} learner named ${userName}.\n${modulePrompts[module] || "Explain something interesting about AI."}`;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4",
