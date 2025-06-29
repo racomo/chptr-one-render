@@ -9,15 +9,19 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // ✅ Serve static files (CSS, JS, images, etc.)
 app.use(express.static(path.join(__dirname)));
-
 app.use(express.json());
 
-// Serve the frontend
+// 🔹 Serve the home page
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Map learning modules to descriptive prompts
+// 🔹 Serve the start page
+app.get('/start', (req, res) => {
+  res.sendFile(path.join(__dirname, 'start.html'));
+});
+
+// 🔹 Learning module prompts
 const modulePrompts = {
   what_is_ai: "Explain what Artificial Intelligence is in simple terms. Use relatable examples and be friendly.",
   problem_solving: "Describe how AI can be used to solve everyday problems, from navigation to health and beyond.",
@@ -27,7 +31,7 @@ const modulePrompts = {
   implications: "Talk about the ethical implications of AI and how it can affect jobs, bias, and privacy."
 };
 
-// Generate story using OpenAI
+// 🔹 Generate story using OpenAI
 app.post('/generate-story', async (req, res) => {
   try {
     const { module, userName, language, level, voice } = req.body;
@@ -57,7 +61,7 @@ Adapt the tone accordingly. The topic is: ${module}.
   }
 });
 
-// Narrate using ElevenLabs
+// 🔹 Narrate using ElevenLabs
 app.post('/narrate', async (req, res) => {
   const { text, voice } = req.body;
 
@@ -92,10 +96,7 @@ app.post('/narrate', async (req, res) => {
   }
 });
 
-// Start server
+// ✅ Start server
 app.listen(process.env.PORT || 3000, () => {
   console.log('Server running on port 3000');
-});
-app.get('/start', (req, res) => {
-  res.sendFile(path.join(__dirname, 'start.html'));
 });
