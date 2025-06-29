@@ -19,7 +19,7 @@ app.get('/start', (req, res) => {
   res.sendFile(path.join(__dirname, 'start.html'));
 });
 
-// Learning topics
+// Legacy module prompts (optional)
 const modulePrompts = {
   what_is_ai: "Explain what Artificial Intelligence is in simple terms. Use relatable examples and be friendly.",
   problem_solving: "Describe how AI can be used to solve everyday problems, from navigation to health and beyond.",
@@ -29,7 +29,6 @@ const modulePrompts = {
   implications: "Talk about the ethical implications of AI and how it can affect jobs, bias, and privacy."
 };
 
-// TED-style tone prompts per language
 const languageIntros = {
   English: "Act like an accomplished speechwriter and public speaking coach. You mastered every precept from the book 'Talk like Ted'. Your expertise lies in crafting captivating and influential speeches, with a specialization in TED-style presentations. Your clients include executives, entrepreneurs, and thought leaders who seek to inspire and engage their audiences on global platforms. I am one of your clients, and here’s the needed context between angle brackets <>. <context>Learn about AI</context> Your objective is to help me create a public speaking script that resonates with the essence of a TED Talk. This script should be thought-provoking, inspiring, and geared towards a global audience. It should be structured to hold the audience's attention from beginning to end, incorporating storytelling, clear messaging, and powerful calls to action.",
   Spanish: "Actúa como un experto en oratoria y presentaciones al estilo TED. Has perfeccionado cada principio del libro 'Talk like Ted'. Tu especialidad es crear discursos cautivadores e influyentes. Tus clientes incluyen ejecutivos, emprendedores y líderes de pensamiento que buscan inspirar y conectar con audiencias globales. Yo soy uno de tus clientes, y aquí está el contexto entre corchetes <>. <context>Aprender sobre la IA</context> Tu objetivo es ayudarme a crear un guion que refleje el estilo TED. Debe ser inspirador, claro y adaptado a un público internacional.",
@@ -37,41 +36,37 @@ const languageIntros = {
   Danish: "Opfør dig som en ekspert i offentlig tale og TED-lignende oplæg. Du mestrer alt fra 'Talk like Ted'. Dine kunder er ledere, iværksættere og formidlere, der ønsker at engagere et globalt publikum. Jeg er en af dine kunder. Her er konteksten mellem <>. <context>Lær om AI</context>. Dit mål er at skabe et manuskript, der inspirerer og vækker eftertanke."
 };
 
-// Generate story dynamically
-app.post('/generate-story', async (req, res) => {
+// ✅ Updated endpoint to support free-form prompts from frontend
+app.post('/api/generate-story', async (req, res) => {
   try {
-    const { module, userName, language, level, voice } = req.body;
-    const systemPrompt = languageIntros[language] || languageIntros['English'];
-    const userPrompt = `Generate a TED-style story appropriate for a ${level} learner named ${userName}.\n${modulePrompts[module] || "Explain something interesting about AI."}`;
+    const { prompt } = req.body;
 
-    console.log(`🔍 Prompting GPT for ${userName} in ${language} as ${level}`);
+    if (!prompt || typeof prompt !== 'string') {
+      return res.status(400).json({ error: 'Invalid or missing prompt.' });
+    }
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt }
-      ],
+      messages: [{ role: "user", content: prompt }],
       max_tokens: 600,
       temperature: 0.7
     });
 
-    const story = completion?.choices?.[0]?.message?.content;
+    const result = completion?.choices?.[0]?.message?.content;
 
-    if (!story) {
+    if (!result) {
       console.error("❌ No story returned from OpenAI");
-      return res.status(500).json({ error: 'Story generation failed. Please try again.' });
+      return res.status(500).json({ error: 'Story generation failed.' });
     }
 
-    res.json({ story });
-
+    res.json({ text: result });
   } catch (error) {
     console.error("❌ Error generating story:", error.response?.data || error.message);
     res.status(500).json({ error: 'Failed to generate story.' });
   }
 });
 
-// Text-to-speech narration
+// 🎙 ElevenLabs Text-to-Speech endpoint (optional if using direct fetch from frontend)
 app.post('/narrate', async (req, res) => {
   const { text, voice } = req.body;
 
