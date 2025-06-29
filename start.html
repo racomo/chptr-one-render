@@ -3,13 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <title>Start Your AI Story</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <main class="hero" style="max-width: 600px; margin: 2rem auto; text-align: center;">
+  <main class="hero">
     <h2>🎙️ Begin Your AI Journey</h2>
     <form id="story-form">
-      <input type="text" id="userName" placeholder="Your name" required /><br><br>
+      <input type="text" id="userName" placeholder="Your name" required /><br>
 
       <select id="language" required>
         <option value="">Select language</option>
@@ -17,20 +19,20 @@
         <option value="Spanish">Spanish</option>
         <option value="French">French</option>
         <option value="Danish">Danish</option>
-      </select><br><br>
+      </select><br>
 
       <select id="level" required>
         <option value="">Select your level</option>
         <option value="beginner">Beginner</option>
         <option value="intermediate">Intermediate</option>
         <option value="expert">Expert</option>
-      </select><br><br>
+      </select><br>
 
       <select id="voice" required>
         <option value="">Select voice</option>
         <option value="EXAVITQu4vr4xnSDxMaL">Rachel (Example Female)</option>
         <option value="21m00Tcm4TlvDq8ikWAM">Default Male</option>
-      </select><br><br>
+      </select><br>
 
       <button type="submit" class="cta-btn">Generate & Listen →</button>
     </form>
@@ -40,62 +42,6 @@
   </main>
 
   <script>
-    function getTedStylePrompt(module, userName, language, level) {
-      const themes = {
-        English: {
-          title: "AI Is Not Coming for Your Job — But Someone Who Uses It Might",
-          idea: "Most people fear AI because they don’t understand it. Learning a little can give you a big edge.",
-          opening: "What if I told you AI is already part of your life?",
-          structure: [
-            "AI is like electricity — scary at first, then everywhere.",
-            "Fear comes from not knowing. You don’t have to be technical.",
-            "Real people are using AI to create, solve, and grow.",
-            "AI doesn’t replace us — it amplifies what makes us human."
-          ],
-          ending: "The real question isn’t if AI will change your world — it’s how you’ll shape it."
-        },
-        Spanish: {
-          title: "La IA No Te Va a Reemplazar — Pero Alguien Que La Use, Sí",
-          idea: "La mayoría teme a la IA porque no la entiende. Aprender un poco te da ventaja.",
-          opening: "¿Y si te dijera que ya usaste IA hoy?",
-          structure: [
-            "La IA es como el correo electrónico — al principio da miedo.",
-            "El miedo viene del desconocimiento.",
-            "Gente real ya la está usando para avanzar.",
-            "La IA amplifica tu humanidad, no la reemplaza."
-          ],
-          ending: "La IA ya cambió el mundo. ¿La usarás tú o la usará otro por ti?"
-        },
-        French: {
-          title: "L’IA Ne Vous Remplacera Pas — Mais Quelqu’un Qui L’Utilise, Oui",
-          idea: "Beaucoup ont peur de l’IA parce qu’ils ne la comprennent pas. Un peu de savoir change tout.",
-          opening: "Et si je vous disais que l’IA fait déjà partie de votre journée ?",
-          structure: [
-            "L’IA est comme Internet — elle fait peur au début.",
-            "La peur vient du flou.",
-            "Des gens normaux l’utilisent déjà pour mieux travailler.",
-            "L’IA aide à être plus humain, pas moins."
-          ],
-          ending: "L’IA est là. Allez-vous l’utiliser — ou rester spectateur ?"
-        },
-        Danish: {
-          title: "AI Kommer Ikke For Dit Job — Men En Der Bruger Det, Gør",
-          idea: "Folk frygter AI, fordi de ikke forstår det. Lidt viden kan give dig meget.",
-          opening: "Hvad hvis jeg sagde, du allerede har brugt AI i dag?",
-          structure: [
-            "AI er som elektricitet — skræmmende i starten, uundgåeligt bagefter.",
-            "Frygt opstår, når vi ikke forstår.",
-            "Helt almindelige mennesker bruger AI allerede.",
-            "AI fjerner ikke det menneskelige — det forstærker det."
-          ],
-          ending: "Spørgsmålet er ikke om AI ændrer verden — men hvordan du vil være en del af det."
-        }
-      };
-
-      const content = themes[language] || themes["English"];
-      return `${content.opening}\n\n${content.idea}\n\n${content.structure.join("\n")}\n\n${content.ending}`;
-    }
-
     const form = document.getElementById('story-form');
     const audio = document.getElementById('audio');
     const responseBox = document.getElementById('response');
@@ -109,8 +55,6 @@
       const voice = document.getElementById('voice').value;
       const module = "what_is_ai";
 
-      const tedScript = getTedStylePrompt(module, userName, language, level);
-
       responseBox.innerText = "⏳ Generating your story...";
       audio.style.display = "none";
 
@@ -122,19 +66,19 @@
         });
 
         const { story } = await storyRes.json();
-        const finalStory = story || tedScript;
-        responseBox.innerText = finalStory;
+        responseBox.innerText = story;
 
         const audioRes = await fetch('/narrate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: finalStory, voice })
+          body: JSON.stringify({ text: story, voice })
         });
 
         const audioBlob = await audioRes.blob();
         audio.src = URL.createObjectURL(audioBlob);
         audio.style.display = 'block';
         audio.play();
+
       } catch (err) {
         console.error(err);
         responseBox.innerText = "⚠️ Error: " + err.message;
