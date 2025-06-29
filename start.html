@@ -1,82 +1,86 @@
-const voiceSelect = document.getElementById('voiceSelect');
-const generateButton = document.getElementById('generateBtn');
-const audioPlayer = document.getElementById('audioPlayer');
-const outputText = document.getElementById('outputText');
+window.addEventListener('DOMContentLoaded', () => {
+  const voiceSelect = document.getElementById('voiceSelect');
+  const generateButton = document.getElementById('generateBtn');
+  const audioPlayer = document.getElementById('audioPlayer');
+  const outputText = document.getElementById('outputText');
 
-// Load static or hardcoded voice options — update if you want to fetch dynamically
-const availableVoices = [
-  { voice_id: 'EXAVITQu4vr4xnSDxMaL', name: 'Rachel (English Female)' },
-  { voice_id: 'TxGEqnHWrfWFTfGW9XjX', name: 'Default Male' }
-];
+  const availableVoices = [
+    { voice_id: 'EXAVITQu4vr4xnSDxMaL', name: 'Rachel (English Female)' },
+    { voice_id: 'TxGEqnHWrfWFTfGW9XjX', name: 'Default Male' }
+  ];
 
-// Initialize voice selector
-function loadVoices() {
-  voiceSelect.innerHTML = '';
-  availableVoices.forEach(voice => {
-    const option = document.createElement('option');
-    option.value = voice.voice_id;
-    option.textContent = voice.name;
-    voiceSelect.appendChild(option);
-  });
-}
-
-// Generate story and get narration from backend
-async function generateAudio() {
-  const language = document.getElementById('languageSelect').value;
-  const level = document.getElementById('levelSelect').value;
-  const voiceId = voiceSelect.value;
-
-  if (!voiceId) {
-    outputText.textContent = '⚠️ Please select a voice.';
-    return;
+  function loadVoices() {
+    voiceSelect.innerHTML = '';
+    availableVoices.forEach(voice => {
+      const option = document.createElement('option');
+      option.value = voice.voice_id;
+      option.textContent = voice.name;
+      voiceSelect.appendChild(option);
+    });
   }
 
-  const prompt = `Explain what AI is to a ${level} in ${language} using friendly storytelling.`;
+  async function generateAudio() {
+    const language = document.getElementById('languageSelect').value;
+    const level = document.getElementById('levelSelect').value;
+    const voiceId = voiceSelect.value;
 
-  try {
-    outputText.textContent = '🧠 Generating story...';
-
-    // Step 1: Get AI-generated story from backend
-    const gptResponse = await fetch('/api/generate-story', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt })
-    });
-
-    const gptData = await gptResponse.json();
-    const story = gptData.text;
-
-    if (!story) {
-      outputText.textContent = '❌ No story returned.';
+    if (!voiceId) {
+      outputText.textContent = '⚠️ Please select a voice.';
       return;
     }
 
-    outputText.textContent = story;
+    const prompt = `Explain what AI is to a ${level} in ${language} using friendly storytelling.`;
 
-    // Step 2: Get narration via backend proxy
-    const ttsResponse = await fetch('/api/narrate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: story, voiceId })
-    });
+    try {
+      outputText.textContent = '🧠 Generating story...';
+      generateButton.disabled = true;
 
-    if (!ttsResponse.ok) {
-      outputText.textContent = '❌ Voice generation failed.';
-      return;
+      // Step 1: Call backend to get OpenAI-generated story
+      const gptResponse = await fetch('/api/generate-story', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt })
+      });
+
+      if (!gptResponse.ok) {
+        throw new Error('Failed to generate story');
+      }
+
+      const gptData = await gptResponse.json();
+      const story = gptData.text;
+
+      if (!story) {
+        outputText.textContent = '❌ No story returned.';
+        return;
+      }
+
+      outputText.textContent = story;
+
+      // Step 2: Get narration via backend proxy
+      const ttsResponse = await fetch('/api/narrate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: story, voiceId })
+      });
+
+      if (!ttsResponse.ok) {
+        outputText.textContent = '❌ Voice generation failed.';
+        return;
+      }
+
+      const audioBlob = await ttsResponse.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      audioPlayer.src = audioUrl;
+      audioPlayer.play();
+    } catch (err) {
+      console.error('⚠️ Error:', err);
+      outputText.textContent = 'Something went wrong. Please try again.';
+    } finally {
+      generateButton.disabled = false;
     }
-
-    const audioBlob = await ttsResponse.blob();
-    const audioUrl = URL.createObjectURL(audioBlob);
-    audioPlayer.src = audioUrl;
-    audioPlayer.play();
-  } catch (err) {
-    console.error('⚠️ Error:', err);
-    outputText.textContent = 'Something went wrong. Please try again.';
   }
-}
 
-// On page load
-window.onload = () => {
+  // Init
   loadVoices();
   generateButton.addEventListener('click', generateAudio);
-};
+});
