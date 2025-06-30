@@ -30,14 +30,25 @@ app.post('/api/generate-story', async (req, res) => {
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-4',
-      messages: [{ role: 'user', content: prompt }],
+      messages: [
+        {
+          role: 'system',
+          content: `Act like an accomplished speechwriter and public speaking coach.
+You mastered every precept from the book "Talk like Ted".
+Your expertise lies in crafting captivating and influential TED-style talks for global audiences.
+Structure your response like a compelling story built for listening, not reading. Keep it simple.`
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
       max_tokens: 1000,
-      temperature: 0.7
+      temperature: 0.85
     });
 
-  console.log("✅ OpenAI raw response:", JSON.stringify(completion, null, 2));
-const result = completion?.choices?.[0]?.message?.content;
-
+    console.log("✅ OpenAI raw response:", JSON.stringify(completion, null, 2));
+    const result = completion?.choices?.[0]?.message?.content?.trim();
 
     if (!result) {
       console.error("❌ No story returned from OpenAI");
