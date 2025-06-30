@@ -93,19 +93,28 @@
         return;
       }
 
-      const prompt = `
-Act like an accomplished speechwriter and public speaking coach.
+      const prompt = `Act like an accomplished speechwriter and public speaking coach.
 You mastered every precept from the book "Talk like TED".
-Specialize in TED-style presentations that inspire and educate global audiences.
+Your expertise lies in crafting captivating and influential speeches, with a specialization in TED-style presentations.
 
-Build a narrated TED-style story, spoken directly to the user, that explains Artificial Intelligence in a friendly, accessible, emotional, and story-driven way — using:
-• their selected level: ${level}
-• their selected language: ${language}
+Your objective is to narrate a public speaking story that resonates with the essence of a TED Talk. 
+This story should be thought-provoking, inspiring, and geared towards a global audience. 
+Make it sound human, emotional, and easy to understand — using middle school English.
 
-Fetch inspiration from leading global AI courses, especially: https://www.elementsofai.com/, Stanford, MIT, DeepLearning.ai, and top-rated free resources. 
-Use metaphors and storytelling. Sound like a human. Avoid jargon.
-End with a real call to action that inspires confidence and makes AI feel approachable.
-`;
+Use storytelling, metaphors, vivid examples, and speak directly to the listener.
+
+Explain Artificial Intelligence in a way that fits this profile:
+• Language: ${language}
+• Level: ${level}
+
+Draw inspiration from:
+- https://www.elementsofai.com/
+- Stanford’s AI resources
+- MIT OpenCourseWare
+- DeepLearning.ai
+- Any public university curriculum
+
+End with a powerful call to action that makes AI feel exciting and doable for someone at this level.`;
 
       try {
         outputText.textContent = '🧠 Generating story...';
