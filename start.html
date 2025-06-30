@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>🎙️ Chptr One — Start Listening</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
   <style>
@@ -10,24 +11,42 @@
       background: #fff8f1;
       color: #1a1a1a;
       padding: 2rem;
-      max-width: 700px;
+      max-width: 600px;
       margin: auto;
+    }
+    h1 {
+      font-size: 1.5rem;
+      text-align: center;
     }
     label {
       display: block;
-      margin-top: 1rem;
+      margin-top: 1.2rem;
       font-weight: 600;
     }
     select, button {
       width: 100%;
-      padding: 0.6rem;
-      margin-top: 0.3rem;
-      font-size: 1rem;
+      padding: 0.8rem;
+      margin-top: 0.4rem;
+      font-size: 1.1rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background-color: #1a1a1a;
+      color: #fff;
+      cursor: pointer;
+      font-weight: 600;
+      margin-top: 1.2rem;
+    }
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
     }
     #outputText {
       margin-top: 2rem;
       font-style: italic;
       white-space: pre-wrap;
+      font-size: 1rem;
     }
     audio {
       margin-top: 1.5rem;
