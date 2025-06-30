@@ -5,7 +5,7 @@ const OpenAI = require('openai');
 const axios = require('axios');
 require('dotenv').config();
 
-// ✅ Initialize OpenAI properly for SDK v4+
+// ✅ Initialize OpenAI SDK v4+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
@@ -13,7 +13,7 @@ const openai = new OpenAI({
 app.use(express.static(path.join(__dirname)));
 app.use(express.json());
 
-// Serve pages
+// 🔹 Serve static pages
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -22,31 +22,15 @@ app.get('/start', (req, res) => {
   res.sendFile(path.join(__dirname, 'start.html'));
 });
 
-// 🎙️ AI Story Generator
+// 🎙️ AI Story Generator Route
 app.post('/api/generate-story', async (req, res) => {
   const { prompt } = req.body;
-  console.log('📨 Received prompt:', prompt); // 🔍 Debug log
+  console.log('📨 Received prompt:', prompt);
 
   try {
-    const result = await openai.chat.completions.create({
+    const completion = await openai.chat.completions.create({
       model: 'gpt-4',
       messages: [
-        { role: 'system', content: 'You are a TED-style storyteller and speechwriter.' },
-        { role: 'user', content: prompt }
-      ],
-      temperature: 0.8,
-      max_tokens: 1000,
-    });
-
-    console.log('✅ GPT response:', result.choices?.[0]?.message?.content); // 🔍 Debug log
-    const text = result.choices?.[0]?.message?.content;
-    res.json({ text });
-  } catch (err) {
-    console.error('❌ GPT error:', err);
-    res.status(500).json({ error: 'Failed to generate story.' });
-  }
-});
-
         {
           role: 'system',
           content: `Act like an accomplished speechwriter and public speaking coach.
@@ -59,12 +43,12 @@ Structure your response like a compelling story built for listening, not reading
           content: prompt
         }
       ],
-      max_tokens: 1200,
-      temperature: 0.85
+      temperature: 0.85,
+      max_tokens: 1200
     });
 
-    console.log("✅ OpenAI raw response:", JSON.stringify(completion, null, 2));
     const result = completion?.choices?.[0]?.message?.content?.trim();
+    console.log('✅ GPT response:', result);
 
     if (!result) {
       console.error("❌ No story returned from OpenAI");
@@ -78,7 +62,7 @@ Structure your response like a compelling story built for listening, not reading
   }
 });
 
-// 🔊 ElevenLabs Narration
+// 🔊 ElevenLabs Narration Route
 app.post('/api/narrate', async (req, res) => {
   const { text, voiceId } = req.body;
 
