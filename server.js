@@ -35,7 +35,9 @@ app.post('/api/generate-story', async (req, res) => {
       temperature: 0.7
     });
 
-    const result = completion?.choices?.[0]?.message?.content;
+  console.log("✅ OpenAI raw response:", JSON.stringify(completion, null, 2));
+const result = completion?.choices?.[0]?.message?.content;
+
 
     if (!result) {
       console.error("❌ No story returned from OpenAI");
