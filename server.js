@@ -5,6 +5,7 @@ const OpenAI = require('openai');
 const axios = require('axios');
 require('dotenv').config();
 
+// ✅ Initialize OpenAI properly for SDK v4+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
@@ -12,6 +13,7 @@ const openai = new OpenAI({
 app.use(express.static(path.join(__dirname)));
 app.use(express.json());
 
+// Serve pages
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -20,33 +22,31 @@ app.get('/start', (req, res) => {
   res.sendFile(path.join(__dirname, 'start.html'));
 });
 
+// 🎙️ AI Story Generator
 app.post('/api/generate-story', async (req, res) => {
   try {
     const { prompt } = req.body;
 
     if (!prompt || typeof prompt !== 'string') {
-      console.warn('⚠️ Prompt missing or invalid:', prompt);
       return res.status(400).json({ error: 'Missing or invalid prompt.' });
     }
 
-    console.log('📤 Prompt sent to GPT:', prompt);
-
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4', // Optional fallback: 'gpt-3.5-turbo'
+      model: 'gpt-4',
       messages: [
         {
           role: 'system',
           content: `Act like an accomplished speechwriter and public speaking coach.
 You mastered every precept from the book "Talk like TED".
 Your expertise lies in crafting captivating and influential TED-style talks for global audiences.
-Structure your response like a compelling story built for listening, not reading. Keep it simple.`
+Structure your response like a compelling story built for listening, not reading. Keep it simple, clear, and emotional.`
         },
         {
           role: 'user',
           content: prompt
         }
       ],
-      max_tokens: 1000,
+      max_tokens: 1200,
       temperature: 0.85
     });
 
@@ -65,6 +65,7 @@ Structure your response like a compelling story built for listening, not reading
   }
 });
 
+// 🔊 ElevenLabs Narration
 app.post('/api/narrate', async (req, res) => {
   const { text, voiceId } = req.body;
 
@@ -99,6 +100,7 @@ app.post('/api/narrate', async (req, res) => {
   }
 });
 
+// 🌍 Port Listener
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
