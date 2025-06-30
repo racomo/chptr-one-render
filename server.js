@@ -25,16 +25,19 @@ app.post('/api/generate-story', async (req, res) => {
     const { prompt } = req.body;
 
     if (!prompt || typeof prompt !== 'string') {
+      console.warn('⚠️ Prompt missing or invalid:', prompt);
       return res.status(400).json({ error: 'Missing or invalid prompt.' });
     }
 
+    console.log('📤 Prompt sent to GPT:', prompt);
+
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4',
+      model: 'gpt-4', // Optional fallback: 'gpt-3.5-turbo'
       messages: [
         {
           role: 'system',
           content: `Act like an accomplished speechwriter and public speaking coach.
-You mastered every precept from the book "Talk like Ted".
+You mastered every precept from the book "Talk like TED".
 Your expertise lies in crafting captivating and influential TED-style talks for global audiences.
 Structure your response like a compelling story built for listening, not reading. Keep it simple.`
         },
