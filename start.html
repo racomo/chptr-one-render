@@ -1,165 +1,40 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>🎹 Chptr One — Start Listening</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
-  <style>
-    * {
-      box-sizing: border-box;
-    }
+<!-- ... (keep your existing HTML above) -->
 
-    body {
-      font-family: 'Inter', sans-serif;
-      background: #fff8f1;
-      color: #1a1a1a;
-      padding: 1.5rem;
-      margin: 0;
-    }
+<script>
+  const voiceSelect = document.getElementById('voiceSelect');
+  const generateButton = document.getElementById('generateBtn');
+  const audioPlayer = document.getElementById('audioPlayer');
+  const outputText = document.getElementById('outputText');
 
-    .container {
-      background: white;
-      padding: 1.5rem;
-      border-radius: 12px;
-      max-width: 540px;
-      margin: auto;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-    }
+  async function loadVoices() {
+    try {
+      const response = await fetch('/api/get-voices');
+      const voices = await response.json();
 
-    h1 {
-      font-size: 1.4rem;
-      text-align: center;
-      margin-bottom: 1.5rem;
-    }
-
-    label {
-      margin-top: 1.2rem;
-      font-weight: 600;
-      display: block;
-    }
-
-    select, button {
-      width: 100%;
-      padding: 0.8rem;
-      margin-top: 0.4rem;
-      font-size: 1rem;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      background-color: #fafafa;
-    }
-
-    select:focus, button:focus {
-      outline: none;
-      border-color: #333;
-    }
-
-    button {
-      background-color: #1a1a1a;
-      color: #fff;
-      font-weight: 600;
-      margin-top: 1.6rem;
-      transition: background-color 0.3s;
-    }
-
-    button:hover:not(:disabled) {
-      background-color: #333333;
-    }
-
-    button:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    #outputText {
-      margin-top: 1.5rem;
-      font-style: italic;
-      white-space: pre-wrap;
-      font-size: 1rem;
-      line-height: 1.4;
-    }
-
-    audio {
-      margin-top: 1rem;
-      width: 100%;
-    }
-
-    @media (max-width: 480px) {
-      .container {
-        padding: 1rem;
-      }
-
-      h1 {
-        font-size: 1.2rem;
-      }
-
-      select, button {
-        font-size: 0.95rem;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>🎹 Chptr One — Start Listening</h1>
-
-    <label for="languageSelect">Language:</label>
-    <select id="languageSelect">
-      <option value="English">English</option>
-      <option value="Spanish">Spanish</option>
-      <option value="Danish">Danish</option>
-      <option value="French">French</option>
-    </select>
-
-    <label for="levelSelect">Your Level:</label>
-    <select id="levelSelect">
-      <option value="complete beginner">Complete Beginner</option>
-      <option value="curious learner">Curious Learner</option>
-      <option value="confident user">Confident User</option>
-      <option value="PhD in AI">PhD in AI</option>
-    </select>
-
-    <label for="voiceSelect">Choose a Voice:</label>
-    <select id="voiceSelect"></select>
-
-    <button id="generateBtn">Generate & Listen</button>
-
-    <div id="outputText"></div>
-    <audio id="audioPlayer" controls></audio>
-  </div>
-
-  <script>
-    const voiceSelect = document.getElementById('voiceSelect');
-    const generateButton = document.getElementById('generateBtn');
-    const audioPlayer = document.getElementById('audioPlayer');
-    const outputText = document.getElementById('outputText');
-
-    const availableVoices = [
-      { voice_id: 'EXAVITQu4vr4xnSDxMaL', name: 'Rachel (English Female)' },
-      { voice_id: 'TxGEqnHWrfWFTfGW9XjX', name: 'Default Male' }
-    ];
-
-    function loadVoices() {
       voiceSelect.innerHTML = '';
-      availableVoices.forEach(voice => {
+      voices.forEach(voice => {
         const option = document.createElement('option');
         option.value = voice.voice_id;
-        option.textContent = voice.name;
+        option.textContent = `${voice.name} (${voice.labels?.accent || 'Default'})`;
         voiceSelect.appendChild(option);
       });
+    } catch (error) {
+      console.error('Failed to fetch voices:', error);
+      outputText.textContent = '❌ Could not load voices.';
+    }
+  }
+
+  async function generateAudio() {
+    const language = document.getElementById('languageSelect').value;
+    const level = document.getElementById('levelSelect').value;
+    const voiceId = voiceSelect.value;
+
+    if (!voiceId) {
+      outputText.textContent = '⚠️ Please select a voice.';
+      return;
     }
 
-    async function generateAudio() {
-      const language = document.getElementById('languageSelect').value;
-      const level = document.getElementById('levelSelect').value;
-      const voiceId = voiceSelect.value;
-
-      if (!voiceId) {
-        outputText.textContent = '⚠️ Please select a voice.';
-        return;
-      }
-
-      const prompt = `Act like an accomplished speechwriter and public speaking coach.
+    const prompt = `Act like an accomplished speechwriter and public speaking coach.
 You mastered every precept from the book "Talk like TED".
 Your expertise lies in crafting captivating and influential speeches, with a specialization in TED-style presentations.
 
@@ -182,53 +57,51 @@ Draw inspiration from:
 
 End with a powerful call to action that makes AI feel exciting and doable for someone at this level.`;
 
-      try {
-        outputText.textContent = '🧠 Generating story...';
-        generateButton.disabled = true;
+    try {
+      outputText.textContent = '🧠 Generating story...';
+      generateButton.disabled = true;
 
-        const gptResponse = await fetch('/api/generate-story', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt })
-        });
+      const gptResponse = await fetch('/api/generate-story', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt })
+      });
 
-        const gptData = await gptResponse.json();
-        const story = gptData.text;
+      const gptData = await gptResponse.json();
+      const story = gptData.text;
 
-        if (!story) {
-          outputText.textContent = '❌ No story returned.';
-          return;
-        }
-
-        outputText.textContent = story;
-
-        const ttsResponse = await fetch('/api/narrate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: story, voiceId })
-        });
-
-        if (!ttsResponse.ok) {
-          outputText.textContent = '❌ Voice generation failed.';
-          return;
-        }
-
-        const audioBlob = await ttsResponse.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
-        audioPlayer.src = audioUrl;
-        audioPlayer.play();
-      } catch (err) {
-        console.error('⚠️ Error:', err);
-        outputText.textContent = 'Something went wrong. Please try again.';
-      } finally {
-        generateButton.disabled = false;
+      if (!story) {
+        outputText.textContent = '❌ No story returned.';
+        return;
       }
-    }
 
-    window.onload = () => {
-      loadVoices();
-      generateButton.addEventListener('click', generateAudio);
-    };
-  </script>
-</body>
-</html>
+      outputText.textContent = story;
+
+      const ttsResponse = await fetch('/api/narrate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: story, voiceId })
+      });
+
+      if (!ttsResponse.ok) {
+        outputText.textContent = '❌ Voice generation failed.';
+        return;
+      }
+
+      const audioBlob = await ttsResponse.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      audioPlayer.src = audioUrl;
+      audioPlayer.play();
+    } catch (err) {
+      console.error('⚠️ Error:', err);
+      outputText.textContent = 'Something went wrong. Please try again.';
+    } finally {
+      generateButton.disabled = false;
+    }
+  }
+
+  window.onload = () => {
+    loadVoices();
+    generateButton.addEventListener('click', generateAudio);
+  };
+</script>
