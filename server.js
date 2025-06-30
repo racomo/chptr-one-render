@@ -24,16 +24,29 @@ app.get('/start', (req, res) => {
 
 // 🎙️ AI Story Generator
 app.post('/api/generate-story', async (req, res) => {
+  const { prompt } = req.body;
+  console.log('📨 Received prompt:', prompt); // 🔍 Debug log
+
   try {
-    const { prompt } = req.body;
-
-    if (!prompt || typeof prompt !== 'string') {
-      return res.status(400).json({ error: 'Missing or invalid prompt.' });
-    }
-
-    const completion = await openai.chat.completions.create({
+    const result = await openai.chat.completions.create({
       model: 'gpt-4',
       messages: [
+        { role: 'system', content: 'You are a TED-style storyteller and speechwriter.' },
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.8,
+      max_tokens: 1000,
+    });
+
+    console.log('✅ GPT response:', result.choices?.[0]?.message?.content); // 🔍 Debug log
+    const text = result.choices?.[0]?.message?.content;
+    res.json({ text });
+  } catch (err) {
+    console.error('❌ GPT error:', err);
+    res.status(500).json({ error: 'Failed to generate story.' });
+  }
+});
+
         {
           role: 'system',
           content: `Act like an accomplished speechwriter and public speaking coach.
