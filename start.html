@@ -4,117 +4,102 @@
   <meta charset="UTF-8" />
   <title>Chptr One – Start</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display&family=Inter:wght@400;600&display=swap');
-
-    * {
-      box-sizing: border-box;
-    }
 
     body {
       font-family: 'Inter', sans-serif;
       background: linear-gradient(to bottom right, #f3e8d8, #fff6e0);
       margin: 0;
-      padding: 1.5rem;
+      padding: 2rem;
       color: #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
     header {
       text-align: center;
-      margin-bottom: 1.5rem;
+      margin-bottom: 2rem;
     }
 
     header img {
-      height: 50px;
+      height: 60px;
     }
 
     h1 {
       font-family: 'Playfair Display', serif;
-      font-size: 1.6rem;
-      margin-top: 0.8rem;
-      line-height: 1.2;
+      font-size: 2rem;
+      margin-top: 1rem;
     }
 
-    select, button {
+    select, button, input {
       padding: 0.75rem;
-      margin: 0.5rem auto;
+      margin: 0.75rem 0;
       font-size: 1rem;
       width: 100%;
-      max-width: 420px;
+      max-width: 400px;
       display: block;
-      border-radius: 8px;
     }
 
     button {
       background: black;
       color: white;
       border: none;
-      font-weight: bold;
       cursor: pointer;
-      transition: background 0.2s ease;
-    }
-
-    button:hover {
-      background: #222;
+      font-weight: bold;
     }
 
     button:active {
-      transform: scale(0.97);
+      transform: scale(0.98);
     }
 
     audio {
-      margin: 1rem auto;
+      margin-top: 1rem;
       width: 100%;
-      max-width: 420px;
-      display: block;
     }
 
     #outputText {
-      margin-top: 1.2rem;
+      margin-top: 1rem;
       white-space: pre-wrap;
       max-width: 700px;
-      padding: 1rem;
-      border-left: 4px solid #d6b37d;
-      background: #fff9f0;
-      border-radius: 6px;
+      text-align: left;
     }
 
     footer {
-      margin-top: 3rem;
+      margin-top: 4rem;
       font-size: 0.9rem;
       text-align: center;
-      color: #444;
     }
 
     footer a {
       color: #333;
       text-decoration: underline;
     }
-
-    @media (max-width: 600px) {
-      h1 {
-        font-size: 1.4rem;
-      }
-      select, button, audio {
-        max-width: 100%;
-        font-size: 0.95rem;
-      }
-    }
   </style>
 </head>
-
 <body>
   <header>
     <img src="/empowher-logo.png" alt="EmpowHer by CORDERO MGMT" />
     <h1>🎙️ Start Your Chptr One</h1>
   </header>
 
+  <input id="nameInput" placeholder="🧑‍🎓 What’s your name?" />
+
   <label for="languageSelect">🌍 Language:</label>
-  <select id="languageSelect"></select>
+  <select id="languageSelect">
+    <option>English</option>
+    <option>Danish</option>
+    <option>Spanish</option>
+    <option>French</option>
+  </select>
 
   <label for="levelSelect">📘 Level:</label>
-  <select id="levelSelect"></select>
+  <select id="levelSelect">
+    <option value="beginner">Beginner</option>
+    <option value="intermediate">Intermediate</option>
+    <option value="advanced">Advanced</option>
+  </select>
 
   <label for="voiceSelect">🔊 Voice:</label>
   <select id="voiceSelect"><option>Loading voices...</option></select>
@@ -130,6 +115,9 @@
   </footer>
 
   <script>
+    const nameInput = document.getElementById('nameInput');
+    const languageSelect = document.getElementById('languageSelect');
+    const levelSelect = document.getElementById('levelSelect');
     const voiceSelect = document.getElementById('voiceSelect');
     const generateButton = document.getElementById('generateBtn');
     const askButton = document.getElementById('askBtn');
@@ -138,67 +126,41 @@
 
     const sessionId = localStorage.getItem('sessionId') || crypto.randomUUID();
     localStorage.setItem('sessionId', sessionId);
-
     let sessionMessages = JSON.parse(localStorage.getItem('sessionMessages')) || [];
-    let userName = localStorage.getItem('userName') || '';
 
     async function loadVoices() {
+      const lang = languageSelect.value;
       const response = await fetch('/api/get-voices');
       const voices = await response.json();
-      const selectedLang = document.getElementById('languageSelect').value;
-      const langMap = {
-        'English': ['en', 'us', 'gb'],
-        'Spanish': ['es'],
-        'French': ['fr'],
-        'Danish': ['da']
-      };
-      const matches = langMap[selectedLang] || [];
-
       voiceSelect.innerHTML = '';
-      voices.forEach(voice => {
-        const accent = voice.labels?.accent?.toLowerCase() || '';
-        const lang = voice.labels?.lang?.toLowerCase() || '';
-        if (matches.some(code => accent.includes(code) || lang.includes(code))) {
-          const option = document.createElement('option');
-          option.value = voice.voice_id;
-          option.textContent = `${voice.name} (${voice.labels?.accent || 'Default'})`;
-          voiceSelect.appendChild(option);
-        }
+      const filtered = voices.filter(v => {
+        const accent = v.labels?.accent?.toLowerCase() || '';
+        return lang === 'English' ? accent.includes('american') || accent.includes('british')
+             : lang === 'French' ? accent.includes('french')
+             : lang === 'Spanish' ? accent.includes('spanish')
+             : lang === 'Danish' ? accent.includes('danish')
+             : false;
       });
-
-      if (!voiceSelect.innerHTML) {
-        voiceSelect.innerHTML = '<option>No voice for selected language</option>';
-      }
-    }
-
-    function saveSessionLocally() {
-      localStorage.setItem('sessionMessages', JSON.stringify(sessionMessages));
-    }
-
-    async function saveSessionServer() {
-      await fetch('/api/save-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId, messages: sessionMessages })
+      filtered.forEach(voice => {
+        const option = document.createElement('option');
+        option.value = voice.voice_id;
+        option.textContent = `${voice.name} (${voice.labels?.accent || 'Default'})`;
+        voiceSelect.appendChild(option);
       });
-    }
-
-    async function loadSessionServer() {
-      const res = await fetch(`/api/get-session?sessionId=${sessionId}`);
-      const data = await res.json();
-      sessionMessages = data.messages || [];
     }
 
     async function generateStory(promptText) {
       const voiceId = voiceSelect.value;
+      const userName = nameInput.value || 'friend';
       if (!voiceId) return;
 
-      sessionMessages.push({ role: 'user', content: promptText });
+      const fullPrompt = `${promptText} Please personalize it for someone named ${userName}.`;
+      sessionMessages.push({ role: 'user', content: fullPrompt });
 
       const response = await fetch('/api/generate-story', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: promptText, sessionId, messages: sessionMessages })
+        body: JSON.stringify({ prompt: fullPrompt, sessionId, messages: sessionMessages })
       });
 
       const data = await response.json();
@@ -207,8 +169,7 @@
 
       outputText.textContent = story;
       sessionMessages.push({ role: 'assistant', content: story });
-      saveSessionLocally();
-      await saveSessionServer();
+      localStorage.setItem('sessionMessages', JSON.stringify(sessionMessages));
 
       const ttsResponse = await fetch('/api/narrate', {
         method: 'POST',
@@ -223,14 +184,9 @@
     }
 
     generateButton.addEventListener('click', () => {
-      const language = document.getElementById('languageSelect').value;
-      const level = document.getElementById('levelSelect').value;
-      const name = userName || prompt("What’s your name?").trim();
-      if (name) {
-        userName = name;
-        localStorage.setItem('userName', name);
-      }
-      const prompt = `Act like a TED speaker. Talk to ${userName}. Explain AI in simple terms. Language: ${language}, Level: ${level}`;
+      const lang = languageSelect.value;
+      const level = levelSelect.value;
+      const prompt = `Act like a TED speaker. Explain AI to a ${level} learner in ${lang}.`;
       generateStory(prompt);
     });
 
@@ -242,9 +198,7 @@
       recognition.interimResults = false;
       recognition.maxAlternatives = 1;
 
-      recognition.onstart = () => {
-        outputText.textContent = "🎤 Listening...";
-      };
+      recognition.onstart = () => outputText.textContent = "🎤 Listening...";
 
       recognition.onresult = (event) => {
         const question = event.results[0][0].transcript;
@@ -260,16 +214,15 @@
     });
 
     window.onload = async () => {
-      document.getElementById('languageSelect').innerHTML = `
-        <option>English</option><option>Danish</option><option>Spanish</option><option>French</option>`;
-      document.getElementById('levelSelect').innerHTML = `
-        <option value="beginner">Beginner</option>
-        <option value="intermediate">Intermediate</option>
-        <option value="advanced">Advanced</option>`;
-      await loadSessionServer();
       await loadVoices();
-      const last = sessionMessages.find(m => m.role === 'assistant');
-      if (last) outputText.textContent = last.content;
+      await fetch(`/api/get-session?sessionId=${sessionId}`)
+        .then(res => res.json())
+        .then(data => {
+          sessionMessages = data.messages || [];
+          const last = sessionMessages.find(m => m.role === 'assistant');
+          if (last) outputText.textContent = last.content;
+        });
+      languageSelect.addEventListener('change', loadVoices);
     };
   </script>
 </body>
