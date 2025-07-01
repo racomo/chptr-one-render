@@ -28,7 +28,7 @@ app.post('/api/generate-story', async (req, res) => {
   console.log('📨 Received prompt:', prompt);
 
   try {
-    const completion = await openai.chat.completions.create({
+    const result = await openai.chat.completions.create({
       model: 'gpt-4',
       messages: [
         {
@@ -47,15 +47,14 @@ Structure your response like a compelling story built for listening, not reading
       max_tokens: 1200
     });
 
-    const result = completion?.choices?.[0]?.message?.content?.trim();
-    console.log('✅ GPT response:', result);
+    const story = result.choices?.[0]?.message?.content?.trim();
 
-    if (!result) {
+    if (!story) {
       console.error("❌ No story returned from OpenAI");
       return res.status(500).json({ error: 'Story generation failed.' });
     }
 
-    res.json({ text: result });
+    res.json({ text: story });
   } catch (error) {
     console.error("❌ Error generating story:", error.response?.data || error.message);
     res.status(500).json({ error: 'Failed to generate story.' });
