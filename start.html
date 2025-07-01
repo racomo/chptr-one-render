@@ -44,6 +44,11 @@
       color: white;
       border: none;
       cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:active {
+      transform: scale(0.98);
     }
 
     audio {
@@ -100,6 +105,7 @@
     const askButton = document.getElementById('askBtn');
     const audioPlayer = document.getElementById('audioPlayer');
     const outputText = document.getElementById('outputText');
+
     const sessionId = localStorage.getItem('sessionId') || crypto.randomUUID();
     localStorage.setItem('sessionId', sessionId);
 
@@ -144,12 +150,13 @@
       const response = await fetch('/api/generate-story', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: promptText })
+        body: JSON.stringify({ prompt: promptText, sessionId, messages: sessionMessages })
       });
 
       const data = await response.json();
       const story = data.text;
       if (!story) return;
+
       outputText.textContent = story;
       sessionMessages.push({ role: 'assistant', content: story });
       saveSessionLocally();
@@ -170,8 +177,7 @@
     generateButton.addEventListener('click', () => {
       const language = document.getElementById('languageSelect').value;
       const level = document.getElementById('levelSelect').value;
-      const prompt = `Act like an accomplished speechwriter. Explain AI in middle school English.
-Language: ${language}, Level: ${level}`;
+      const prompt = `Act like an accomplished speechwriter. Explain AI in middle school English. Language: ${language}, Level: ${level}`;
       generateStory(prompt);
     });
 
@@ -191,15 +197,15 @@ Language: ${language}, Level: ${level}`;
 
     window.onload = async () => {
       await loadVoices();
-      document.getElementById('languageSelect').innerHTML = '<option>English</option><option>Danish</option><option>Spanish</option><option>French</option>';
-      document.getElementById('levelSelect').innerHTML = '<option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option>';
+      document.getElementById('languageSelect').innerHTML = `
+        <option>English</option><option>Danish</option><option>Spanish</option><option>French</option>`;
+      document.getElementById('levelSelect').innerHTML = `
+        <option value="beginner">Beginner</option>
+        <option value="intermediate">Intermediate</option>
+        <option value="advanced">Advanced</option>`;
       await loadSessionServer();
-      if (sessionMessages.length > 0) {
-        const last = sessionMessages.find(m => m.role === 'assistant');
-        if (last) {
-          outputText.textContent = last.content;
-        }
-      }
+      const last = sessionMessages.find(m => m.role === 'assistant');
+      if (last) outputText.textContent = last.content;
     };
   </script>
 </body>
