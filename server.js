@@ -22,27 +22,30 @@ app.get('/start', (req, res) => {
   res.sendFile(path.join(__dirname, 'start.html'));
 });
 
-// 🎙️ AI Story Generator Route
+// 🎙️ AI Story Generator Route with session context
 app.post('/api/generate-story', async (req, res) => {
-  const { prompt } = req.body;
+  const { prompt, messages = [] } = req.body;
   console.log('📨 Received prompt:', prompt);
 
   try {
-    const result = await openai.chat.completions.create({
-      model: 'gpt-4',
-      messages: [
-        {
-          role: 'system',
-          content: `Act like an accomplished speechwriter and public speaking coach.
+    const fullMessages = [
+      {
+        role: 'system',
+        content: `Act like an accomplished speechwriter and public speaking coach.
 You mastered every precept from the book "Talk like TED".
 Your expertise lies in crafting captivating and influential TED-style talks for global audiences.
 Structure your response like a compelling story built for listening, not reading. Keep it simple, clear, and emotional.`
-        },
-        {
-          role: 'user',
-          content: prompt
-        }
-      ],
+      },
+      ...messages,
+      {
+        role: 'user',
+        content: prompt
+      }
+    ];
+
+    const result = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: fullMessages,
       temperature: 0.85,
       max_tokens: 1200
     });
@@ -96,11 +99,6 @@ app.post('/api/narrate', async (req, res) => {
   }
 });
 
-// 🌍 Port Listener
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
 // 🔈 Get available voices from ElevenLabs
 app.get('/api/get-voices', async (req, res) => {
   try {
@@ -117,7 +115,8 @@ app.get('/api/get-voices', async (req, res) => {
     res.status(500).json({ error: 'Could not fetch voices' });
   }
 });
-// In-memory session store (or replace with Redis/Mongo later)
+
+// 💾 In-memory session store (for prototyping)
 const sessions = {};
 
 app.post('/api/save-session', (req, res) => {
@@ -134,4 +133,10 @@ app.get('/api/get-session', (req, res) => {
   const { sessionId } = req.query;
   const messages = sessions[sessionId] || [];
   res.json({ messages });
+});
+
+// 🌍 Port Listener
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
 });
