@@ -33,12 +33,21 @@
   <h1>🎙️ Start Your Chptr One</h1>
 
   <label for="languageSelect">🌍 Language:</label>
-  <select id="languageSelect"></select>
+  <select id="languageSelect">
+    <option value="English">English</option>
+    <option value="Danish">Danish</option>
+    <option value="Spanish">Spanish</option>
+    <option value="French">French</option>
+  </select>
 
   <br />
 
   <label for="levelSelect">📘 Level:</label>
-  <select id="levelSelect"></select>
+  <select id="levelSelect">
+    <option value="beginner">Beginner</option>
+    <option value="intermediate">Intermediate</option>
+    <option value="advanced">Advanced</option>
+  </select>
 
   <br />
 
@@ -61,18 +70,23 @@
     const askButton = document.getElementById('askBtn');
     const audioPlayer = document.getElementById('audioPlayer');
     const outputText = document.getElementById('outputText');
+
     const sessionMessages = JSON.parse(localStorage.getItem('sessionMessages')) || [];
 
     async function loadVoices() {
-      const response = await fetch('/api/get-voices');
-      const voices = await response.json();
-      voiceSelect.innerHTML = '';
-      voices.forEach(voice => {
-        const option = document.createElement('option');
-        option.value = voice.voice_id;
-        option.textContent = `${voice.name} (${voice.labels?.accent || 'Default'})`;
-        voiceSelect.appendChild(option);
-      });
+      try {
+        const response = await fetch('/api/get-voices');
+        const voices = await response.json();
+        voiceSelect.innerHTML = '';
+        voices.forEach(voice => {
+          const option = document.createElement('option');
+          option.value = voice.voice_id;
+          option.textContent = `${voice.name} (${voice.labels?.accent || 'Default'})`;
+          voiceSelect.appendChild(option);
+        });
+      } catch (error) {
+        outputText.textContent = '❌ Could not load voices.';
+      }
     }
 
     function saveSession() {
@@ -81,19 +95,26 @@
 
     async function generateStory(promptText) {
       const voiceId = voiceSelect.value;
-      if (!voiceId) return;
+      if (!voiceId) {
+        outputText.textContent = '⚠️ Please select a voice.';
+        return;
+      }
 
       sessionMessages.push({ role: 'user', content: promptText });
 
       const response = await fetch('/api/generate-story', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: promptText })
+        body: JSON.stringify({ prompt: buildThreadedPrompt() })
       });
 
       const data = await response.json();
       const story = data.text;
-      if (!story) return;
+      if (!story) {
+        outputText.textContent = '❌ No story returned.';
+        return;
+      }
+
       outputText.textContent = story;
       sessionMessages.push({ role: 'assistant', content: story });
       saveSession();
@@ -110,13 +131,20 @@
       audioPlayer.play();
     }
 
+    function buildThreadedPrompt() {
+      return sessionMessages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n');
+    }
+
     generateButton.addEventListener('click', () => {
       const language = document.getElementById('languageSelect').value;
       const level = document.getElementById('levelSelect').value;
 
-      const prompt = `Act like an accomplished speechwriter. Explain AI in middle school English.
-Language: ${language}, Level: ${level}`;
-      generateStory(prompt);
+      sessionMessages.length = 0; // Start fresh
+      const initialPrompt = `Act like an accomplished speechwriter and TED speaker. 
+Explain what Artificial Intelligence is in middle school English using storytelling, metaphors, and vivid examples.
+Language: ${language}, Level: ${level}. End with a powerful call to action.`;
+
+      generateStory(initialPrompt);
     });
 
     askButton.addEventListener('click', () => {
@@ -140,8 +168,6 @@ Language: ${language}, Level: ${level}`;
 
     window.onload = () => {
       loadVoices();
-      document.getElementById('languageSelect').innerHTML = '<option>English</option><option>Danish</option><option>Spanish</option><option>French</option>';
-      document.getElementById('levelSelect').innerHTML = '<option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option>';
     };
   </script>
 </body>
