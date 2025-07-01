@@ -27,35 +27,18 @@
       margin-top: 1rem;
       white-space: pre-wrap;
     }
-    #nextBtn {
-      display: none;
-      margin-top: 1rem;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
   </style>
 </head>
 <body>
   <h1>🎙️ Start Your Chptr One</h1>
 
   <label for="languageSelect">🌍 Language:</label>
-  <select id="languageSelect">
-    <option value="English">English</option>
-    <option value="Danish">Danish</option>
-    <option value="Spanish">Spanish</option>
-    <option value="French">French</option>
-  </select>
+  <select id="languageSelect"></select>
 
   <br />
 
   <label for="levelSelect">📘 Level:</label>
-  <select id="levelSelect">
-    <option value="beginner">Beginner</option>
-    <option value="intermediate">Intermediate</option>
-    <option value="advanced">Advanced</option>
-  </select>
+  <select id="levelSelect"></select>
 
   <br />
 
@@ -67,7 +50,7 @@
   <br />
 
   <button id="generateBtn">Generate AI Story</button>
-  <button id="nextBtn">➡️ Continue to Next Story</button>
+  <button id="askBtn">🎤 Ask a Question</button>
 
   <div id="outputText">🧠 Waiting for your prompt...</div>
   <audio id="audioPlayer" controls></audio>
@@ -75,120 +58,90 @@
   <script>
     const voiceSelect = document.getElementById('voiceSelect');
     const generateButton = document.getElementById('generateBtn');
-    const nextButton = document.getElementById('nextBtn');
+    const askButton = document.getElementById('askBtn');
     const audioPlayer = document.getElementById('audioPlayer');
     const outputText = document.getElementById('outputText');
+    const sessionMessages = JSON.parse(localStorage.getItem('sessionMessages')) || [];
 
     async function loadVoices() {
-      try {
-        const response = await fetch('/api/get-voices');
-        const voices = await response.json();
-
-        voiceSelect.innerHTML = '';
-        voices.forEach(voice => {
-          const option = document.createElement('option');
-          option.value = voice.voice_id;
-          option.textContent = `${voice.name} (${voice.labels?.accent || 'Default'})`;
-          voiceSelect.appendChild(option);
-        });
-
-        console.log('✅ Voices loaded:', voices);
-      } catch (error) {
-        console.error('❌ Failed to fetch voices:', error);
-        outputText.textContent = '❌ Could not load voices.';
-      }
+      const response = await fetch('/api/get-voices');
+      const voices = await response.json();
+      voiceSelect.innerHTML = '';
+      voices.forEach(voice => {
+        const option = document.createElement('option');
+        option.value = voice.voice_id;
+        option.textContent = `${voice.name} (${voice.labels?.accent || 'Default'})`;
+        voiceSelect.appendChild(option);
+      });
     }
 
-    async function generateAudio(nextPrompt = null) {
+    function saveSession() {
+      localStorage.setItem('sessionMessages', JSON.stringify(sessionMessages));
+    }
+
+    async function generateStory(promptText) {
+      const voiceId = voiceSelect.value;
+      if (!voiceId) return;
+
+      sessionMessages.push({ role: 'user', content: promptText });
+
+      const response = await fetch('/api/generate-story', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: promptText })
+      });
+
+      const data = await response.json();
+      const story = data.text;
+      if (!story) return;
+      outputText.textContent = story;
+      sessionMessages.push({ role: 'assistant', content: story });
+      saveSession();
+
+      const ttsResponse = await fetch('/api/narrate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: story, voiceId })
+      });
+
+      const audioBlob = await ttsResponse.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      audioPlayer.src = audioUrl;
+      audioPlayer.play();
+    }
+
+    generateButton.addEventListener('click', () => {
       const language = document.getElementById('languageSelect').value;
       const level = document.getElementById('levelSelect').value;
-      const voiceId = voiceSelect.value;
 
-      if (!voiceId) {
-        outputText.textContent = '⚠️ Please select a voice.';
-        return;
-      }
+      const prompt = `Act like an accomplished speechwriter. Explain AI in middle school English.
+Language: ${language}, Level: ${level}`;
+      generateStory(prompt);
+    });
 
-      const prompt = nextPrompt || `Act like an accomplished speechwriter and public speaking coach.
-You mastered every precept from the book "Talk like TED".
-Your expertise lies in crafting captivating and influential speeches, with a specialization in TED-style presentations.
+    askButton.addEventListener('click', () => {
+      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.lang = 'en-US';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
 
-Your objective is to narrate a public speaking story that resonates with the essence of a TED Talk. 
-This story should be thought-provoking, inspiring, and geared towards a global audience. 
-Make it sound human, emotional, and easy to understand — using middle school English.
+      recognition.onresult = (event) => {
+        const question = event.results[0][0].transcript;
+        outputText.textContent = `🎤 You asked: ${question}`;
+        generateStory(question);
+      };
 
-Use storytelling, metaphors, vivid examples, and speak directly to the listener.
+      recognition.onerror = (event) => {
+        outputText.textContent = `❌ Error: ${event.error}`;
+      };
 
-Explain Artificial Intelligence in a way that fits this profile:
-• Language: ${language}
-• Level: ${level}
-
-Draw inspiration from:
-- https://www.elementsofai.com/
-- Stanford’s AI resources
-- MIT OpenCourseWare
-- DeepLearning.ai
-- Any public university curriculum
-
-End with a powerful call to action that makes AI feel exciting and doable for someone at this level.`;
-
-      try {
-        outputText.textContent = '🧠 Generating story...';
-        generateButton.disabled = true;
-        nextButton.style.display = 'none';
-
-        const gptResponse = await fetch('/api/generate-story', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt })
-        });
-
-        const gptData = await gptResponse.json();
-        const story = gptData.text;
-
-        if (!story) {
-          outputText.textContent = '❌ No story returned.';
-          return;
-        }
-
-        outputText.textContent = story;
-
-        const ttsResponse = await fetch('/api/narrate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: story, voiceId })
-        });
-
-        if (!ttsResponse.ok) {
-          outputText.textContent = '❌ Voice generation failed.';
-          return;
-        }
-
-        const audioBlob = await ttsResponse.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
-        audioPlayer.src = audioUrl;
-        audioPlayer.play();
-
-        // When audio ends, allow continuation
-        audioPlayer.onended = () => {
-          nextButton.style.display = 'inline-block';
-        };
-
-      } catch (err) {
-        console.error('⚠️ Error:', err);
-        outputText.textContent = 'Something went wrong. Please try again.';
-      } finally {
-        generateButton.disabled = false;
-      }
-    }
+      recognition.start();
+    });
 
     window.onload = () => {
       loadVoices();
-      generateButton.addEventListener('click', () => generateAudio());
-      nextButton.addEventListener('click', () => {
-        const followUpPrompt = `Now continue the story. Build upon the user's previous interest and explain how AI could help them in everyday work. Use storytelling, vivid examples, and finish with a real-life application from the user's environment.`;
-        generateAudio(followUpPrompt);
-      });
+      document.getElementById('languageSelect').innerHTML = '<option>English</option><option>Danish</option><option>Spanish</option><option>French</option>';
+      document.getElementById('levelSelect').innerHTML = '<option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option>';
     };
   </script>
 </body>
