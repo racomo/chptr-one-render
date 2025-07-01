@@ -63,13 +63,15 @@
   <div id="outputText">🧠 Waiting for your prompt...</div>
   <audio id="audioPlayer" controls></audio>
 
+  <!-- JavaScript below -->
   <script>
+    console.log("✅ JavaScript connected");
+
     const voiceSelect = document.getElementById('voiceSelect');
     const generateButton = document.getElementById('generateBtn');
     const audioPlayer = document.getElementById('audioPlayer');
     const outputText = document.getElementById('outputText');
 
-    // Log any JS errors
     window.onerror = function (message, source, lineno, colno, error) {
       console.error('❌ JavaScript Error:', message, 'at', source + ':' + lineno + ':' + colno);
       outputText.textContent = '❌ JavaScript error: ' + message;
