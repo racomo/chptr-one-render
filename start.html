@@ -58,30 +58,26 @@
 
   <br />
 
+  <!-- Action buttons -->
   <button id="generateBtn">Generate AI Story</button>
+  <button id="continueBtn" disabled>▶️ Continue Story</button>
 
   <div id="outputText">🧠 Waiting for your prompt...</div>
   <audio id="audioPlayer" controls></audio>
 
-  <!-- JavaScript below -->
   <script>
     console.log("✅ JavaScript connected");
 
     const voiceSelect = document.getElementById('voiceSelect');
     const generateButton = document.getElementById('generateBtn');
+    const continueButton = document.getElementById('continueBtn');
     const audioPlayer = document.getElementById('audioPlayer');
     const outputText = document.getElementById('outputText');
-
-    window.onerror = function (message, source, lineno, colno, error) {
-      console.error('❌ JavaScript Error:', message, 'at', source + ':' + lineno + ':' + colno);
-      outputText.textContent = '❌ JavaScript error: ' + message;
-    };
 
     async function loadVoices() {
       try {
         const response = await fetch('/api/get-voices');
         const voices = await response.json();
-
         voiceSelect.innerHTML = '';
         voices.forEach(voice => {
           const option = document.createElement('option');
@@ -89,7 +85,6 @@
           option.textContent = `${voice.name} (${voice.labels?.accent || 'Default'})`;
           voiceSelect.appendChild(option);
         });
-
         console.log('✅ Voices loaded:', voices);
       } catch (error) {
         console.error('❌ Failed to fetch voices:', error);
@@ -149,6 +144,8 @@ End with a powerful call to action that makes AI feel exciting and doable for so
         }
 
         outputText.textContent = story;
+        sessionStorage.setItem('lastStory', story);
+        continueButton.disabled = false;
 
         const ttsResponse = await fetch('/api/narrate', {
           method: 'POST',
@@ -173,10 +170,61 @@ End with a powerful call to action that makes AI feel exciting and doable for so
       }
     }
 
+    async function continueStory() {
+      const lastStory = sessionStorage.getItem('lastStory');
+      const voiceId = voiceSelect.value;
+
+      if (!lastStory) {
+        outputText.textContent = '⚠️ No previous story found.';
+        return;
+      }
+
+      const continuationPrompt = `Please continue this TED-style story in the same tone and level as before. Pick up from where it ended, without repeating:\n\n${lastStory}`;
+
+      try {
+        outputText.textContent = '🔁 Continuing the story...';
+        continueButton.disabled = true;
+
+        const response = await fetch('/api/generate-story', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: continuationPrompt })
+        });
+
+        const data = await response.json();
+        const continuation = data.text;
+
+        if (!continuation) {
+          outputText.textContent = '❌ Failed to continue story.';
+          return;
+        }
+
+        const fullStory = lastStory + '\n\n' + continuation;
+        sessionStorage.setItem('lastStory', fullStory);
+        outputText.textContent = continuation;
+
+        const narration = await fetch('/api/narrate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: continuation, voiceId })
+        });
+
+        const blob = await narration.blob();
+        const audioURL = URL.createObjectURL(blob);
+        audioPlayer.src = audioURL;
+        audioPlayer.play();
+        continueButton.disabled = false;
+      } catch (err) {
+        console.error("❌ Error continuing story:", err);
+        outputText.textContent = '❌ Could not continue the story.';
+      }
+    }
+
     window.onload = () => {
       console.log('✅ Page loaded. Initializing...');
       loadVoices();
       generateButton.addEventListener('click', generateAudio);
+      continueButton.addEventListener('click', continueStory);
     };
   </script>
 </body>
