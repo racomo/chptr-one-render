@@ -81,10 +81,19 @@
   </header>
 
   <label for="languageSelect">🌍 Language:</label>
-  <select id="languageSelect"></select>
+  <select id="languageSelect">
+    <option value="English">English</option>
+    <option value="Danish">Danish</option>
+    <option value="Spanish">Spanish</option>
+    <option value="French">French</option>
+  </select>
 
   <label for="levelSelect">📘 Level:</label>
-  <select id="levelSelect"></select>
+  <select id="levelSelect">
+    <option value="beginner">Beginner</option>
+    <option value="intermediate">Intermediate</option>
+    <option value="advanced">Advanced</option>
+  </select>
 
   <label for="voiceSelect">🔊 Voice:</label>
   <select id="voiceSelect"><option>Loading voices...</option></select>
@@ -105,17 +114,32 @@
     const askButton = document.getElementById('askBtn');
     const audioPlayer = document.getElementById('audioPlayer');
     const outputText = document.getElementById('outputText');
+    const languageSelect = document.getElementById('languageSelect');
 
     const sessionId = localStorage.getItem('sessionId') || crypto.randomUUID();
     localStorage.setItem('sessionId', sessionId);
 
     let sessionMessages = JSON.parse(localStorage.getItem('sessionMessages')) || [];
 
-    async function loadVoices() {
+    async function loadVoicesForLanguage(selectedLang) {
+      const langMap = {
+        English: ['en', 'us', 'uk'],
+        Spanish: ['es'],
+        French: ['fr'],
+        Danish: ['da']
+      };
+
       const response = await fetch('/api/get-voices');
       const voices = await response.json();
+
+      const validCodes = langMap[selectedLang] || [];
+      const filtered = voices.filter(v => {
+        const accent = (v.labels?.accent || '').toLowerCase();
+        return validCodes.some(code => accent.includes(code));
+      });
+
       voiceSelect.innerHTML = '';
-      voices.forEach(voice => {
+      (filtered.length ? filtered : voices).forEach(voice => {
         const option = document.createElement('option');
         option.value = voice.voice_id;
         option.textContent = `${voice.name} (${voice.labels?.accent || 'Default'})`;
@@ -175,7 +199,7 @@
     }
 
     generateButton.addEventListener('click', () => {
-      const language = document.getElementById('languageSelect').value;
+      const language = languageSelect.value;
       const level = document.getElementById('levelSelect').value;
       const prompt = `Act like an accomplished speechwriter. Explain AI in middle school English. Language: ${language}, Level: ${level}`;
       generateStory(prompt);
@@ -208,14 +232,12 @@
       recognition.start();
     });
 
+    languageSelect.addEventListener('change', async () => {
+      await loadVoicesForLanguage(languageSelect.value);
+    });
+
     window.onload = async () => {
-      await loadVoices();
-      document.getElementById('languageSelect').innerHTML = `
-        <option>English</option><option>Danish</option><option>Spanish</option><option>French</option>`;
-      document.getElementById('levelSelect').innerHTML = `
-        <option value="beginner">Beginner</option>
-        <option value="intermediate">Intermediate</option>
-        <option value="advanced">Advanced</option>`;
+      await loadVoicesForLanguage(languageSelect.value);
       await loadSessionServer();
       const last = sessionMessages.find(m => m.role === 'assistant');
       if (last) outputText.textContent = last.content;
