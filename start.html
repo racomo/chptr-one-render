@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display&family=Inter:wght@400;600&display=swap');
+
     body {
       font-family: 'Inter', sans-serif;
       background: linear-gradient(to bottom right, #f3e8d8, #fff6e0);
@@ -13,13 +14,22 @@
       padding: 2rem;
       color: #333;
     }
-    header { text-align: center; margin-bottom: 2rem; }
-    header img { height: 60px; }
+
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    header img {
+      height: 60px;
+    }
+
     h1 {
       font-family: 'Playfair Display', serif;
       font-size: 2rem;
       margin-top: 1rem;
     }
+
     select, button {
       padding: 0.75rem;
       margin: 0.75rem 0;
@@ -28,6 +38,7 @@
       max-width: 400px;
       display: block;
     }
+
     button {
       background: black;
       color: white;
@@ -35,19 +46,32 @@
       cursor: pointer;
       font-weight: bold;
     }
-    button:active { transform: scale(0.98); }
-    audio { margin-top: 1rem; width: 100%; }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    audio {
+      margin-top: 1rem;
+      width: 100%;
+    }
+
     #outputText {
       margin-top: 1rem;
       white-space: pre-wrap;
       max-width: 700px;
     }
+
     footer {
       margin-top: 4rem;
       font-size: 0.9rem;
       text-align: center;
     }
-    footer a { color: #333; text-decoration: underline; }
+
+    footer a {
+      color: #333;
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
@@ -58,10 +82,10 @@
 
   <label for="languageSelect">🌍 Language:</label>
   <select id="languageSelect">
-    <option value="en">English</option>
-    <option value="da">Danish</option>
-    <option value="es">Spanish</option>
-    <option value="fr">French</option>
+    <option value="English">English</option>
+    <option value="Danish">Danish</option>
+    <option value="Spanish">Spanish</option>
+    <option value="French">French</option>
   </select>
 
   <label for="levelSelect">📘 Level:</label>
@@ -86,30 +110,38 @@
 
   <script>
     const voiceSelect = document.getElementById('voiceSelect');
-    const languageSelect = document.getElementById('languageSelect');
     const generateButton = document.getElementById('generateBtn');
     const askButton = document.getElementById('askBtn');
     const audioPlayer = document.getElementById('audioPlayer');
     const outputText = document.getElementById('outputText');
+    const languageSelect = document.getElementById('languageSelect');
+
     const sessionId = localStorage.getItem('sessionId') || crypto.randomUUID();
     localStorage.setItem('sessionId', sessionId);
 
     let sessionMessages = JSON.parse(localStorage.getItem('sessionMessages')) || [];
-    let allVoices = [];
 
     async function loadVoices() {
+      const selectedLang = languageSelect.value;
       const response = await fetch('/api/get-voices');
-      allVoices = await response.json();
-      updateVoiceOptions(languageSelect.value);
-    }
-
-    function updateVoiceOptions(langCode) {
+      const voices = await response.json();
       voiceSelect.innerHTML = '';
-      const filtered = allVoices.filter(v =>
-        v.labels?.accent?.toLowerCase().includes(langCode) ||
-        v.name.toLowerCase().includes(langCode)
-      );
-      (filtered.length ? filtered : allVoices).forEach(voice => {
+
+      const languageFilter = {
+        English: ['en', 'us', 'gb'],
+        Danish: ['da', 'dk'],
+        Spanish: ['es', 'mx'],
+        French: ['fr']
+      };
+
+      const matchCodes = languageFilter[selectedLang] || ['en'];
+
+      const matching = voices.filter(v => {
+        const accent = (v.labels?.accent || '').toLowerCase();
+        return matchCodes.some(code => accent.includes(code));
+      });
+
+      (matching.length ? matching : voices).forEach(voice => {
         const option = document.createElement('option');
         option.value = voice.voice_id;
         option.textContent = `${voice.name} (${voice.labels?.accent || 'Default'})`;
@@ -117,9 +149,7 @@
       });
     }
 
-    languageSelect.addEventListener('change', () => {
-      updateVoiceOptions(languageSelect.value);
-    });
+    languageSelect.addEventListener('change', loadVoices);
 
     function saveSessionLocally() {
       localStorage.setItem('sessionMessages', JSON.stringify(sessionMessages));
@@ -143,7 +173,6 @@
       const voiceId = voiceSelect.value;
       if (!voiceId) return;
 
-      outputText.textContent = "🧠 Thinking...";
       sessionMessages.push({ role: 'user', content: promptText });
 
       const response = await fetch('/api/generate-story', {
@@ -174,7 +203,7 @@
     }
 
     generateButton.addEventListener('click', () => {
-      const language = languageSelect.options[languageSelect.selectedIndex].text;
+      const language = languageSelect.value;
       const level = document.getElementById('levelSelect').value;
       const prompt = `Act like an accomplished speechwriter. Explain AI in middle school English. Language: ${language}, Level: ${level}`;
       generateStory(prompt);
@@ -182,17 +211,26 @@
 
     askButton.addEventListener('click', () => {
       if (audioPlayer && !audioPlayer.paused) audioPlayer.pause();
+
       const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
       recognition.lang = 'en-US';
-      recognition.onstart = () => outputText.textContent = "🎤 Listening...";
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => {
+        outputText.textContent = "🎤 Listening...";
+      };
+
       recognition.onresult = (event) => {
         const question = event.results[0][0].transcript;
         outputText.textContent = `🎤 You asked: ${question}`;
         generateStory(question);
       };
+
       recognition.onerror = (event) => {
         outputText.textContent = `❌ Error: ${event.error}`;
       };
+
       recognition.start();
     });
 
