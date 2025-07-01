@@ -30,7 +30,7 @@
       margin-top: 1rem;
     }
 
-    select, button {
+    select, input, button {
       padding: 0.75rem;
       margin: 0.75rem 0;
       font-size: 1rem;
@@ -80,20 +80,14 @@
     <h1>🎙️ Start Your Chptr One</h1>
   </header>
 
+  <label for="nameInput">👤 Your name:</label>
+  <input type="text" id="nameInput" placeholder="e.g. Raul" />
+
   <label for="languageSelect">🌍 Language:</label>
-  <select id="languageSelect">
-    <option value="English">English</option>
-    <option value="Danish">Danish</option>
-    <option value="Spanish">Spanish</option>
-    <option value="French">French</option>
-  </select>
+  <select id="languageSelect"></select>
 
   <label for="levelSelect">📘 Level:</label>
-  <select id="levelSelect">
-    <option value="beginner">Beginner</option>
-    <option value="intermediate">Intermediate</option>
-    <option value="advanced">Advanced</option>
-  </select>
+  <select id="levelSelect"></select>
 
   <label for="voiceSelect">🔊 Voice:</label>
   <select id="voiceSelect"><option>Loading voices...</option></select>
@@ -114,7 +108,7 @@
     const askButton = document.getElementById('askBtn');
     const audioPlayer = document.getElementById('audioPlayer');
     const outputText = document.getElementById('outputText');
-    const languageSelect = document.getElementById('languageSelect');
+    const nameInput = document.getElementById('nameInput');
 
     const sessionId = localStorage.getItem('sessionId') || crypto.randomUUID();
     localStorage.setItem('sessionId', sessionId);
@@ -122,34 +116,16 @@
     let sessionMessages = JSON.parse(localStorage.getItem('sessionMessages')) || [];
 
     async function loadVoices() {
-      const selectedLang = languageSelect.value;
       const response = await fetch('/api/get-voices');
       const voices = await response.json();
       voiceSelect.innerHTML = '';
-
-      const languageFilter = {
-        English: ['en', 'us', 'gb'],
-        Danish: ['da', 'dk'],
-        Spanish: ['es', 'mx'],
-        French: ['fr']
-      };
-
-      const matchCodes = languageFilter[selectedLang] || ['en'];
-
-      const matching = voices.filter(v => {
-        const accent = (v.labels?.accent || '').toLowerCase();
-        return matchCodes.some(code => accent.includes(code));
-      });
-
-      (matching.length ? matching : voices).forEach(voice => {
+      voices.forEach(voice => {
         const option = document.createElement('option');
         option.value = voice.voice_id;
         option.textContent = `${voice.name} (${voice.labels?.accent || 'Default'})`;
         voiceSelect.appendChild(option);
       });
     }
-
-    languageSelect.addEventListener('change', loadVoices);
 
     function saveSessionLocally() {
       localStorage.setItem('sessionMessages', JSON.stringify(sessionMessages));
@@ -171,6 +147,7 @@
 
     async function generateStory(promptText) {
       const voiceId = voiceSelect.value;
+      const userName = nameInput.value.trim() || 'friend';
       if (!voiceId) return;
 
       sessionMessages.push({ role: 'user', content: promptText });
@@ -178,7 +155,7 @@
       const response = await fetch('/api/generate-story', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: promptText, sessionId, messages: sessionMessages })
+        body: JSON.stringify({ prompt: promptText, userName })
       });
 
       const data = await response.json();
@@ -203,14 +180,17 @@
     }
 
     generateButton.addEventListener('click', () => {
-      const language = languageSelect.value;
+      const language = document.getElementById('languageSelect').value;
       const level = document.getElementById('levelSelect').value;
-      const prompt = `Act like an accomplished speechwriter. Explain AI in middle school English. Language: ${language}, Level: ${level}`;
+      const name = nameInput.value.trim() || 'friend';
+      const prompt = `Explain AI in middle school English. Language: ${language}, Level: ${level}. Make it feel like you're speaking directly to ${name}, with care and energy.`;
       generateStory(prompt);
     });
 
     askButton.addEventListener('click', () => {
-      if (audioPlayer && !audioPlayer.paused) audioPlayer.pause();
+      if (audioPlayer && !audioPlayer.paused) {
+        audioPlayer.pause();
+      }
 
       const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
       recognition.lang = 'en-US';
@@ -223,8 +203,10 @@
 
       recognition.onresult = (event) => {
         const question = event.results[0][0].transcript;
+        const name = nameInput.value.trim() || 'friend';
+        const personalizedPrompt = `${question}. Answer directly to ${name}, like a TED speaker making it personal.`;
         outputText.textContent = `🎤 You asked: ${question}`;
-        generateStory(question);
+        generateStory(personalizedPrompt);
       };
 
       recognition.onerror = (event) => {
@@ -236,6 +218,12 @@
 
     window.onload = async () => {
       await loadVoices();
+      document.getElementById('languageSelect').innerHTML = `
+        <option>English</option><option>Danish</option><option>Spanish</option><option>French</option>`;
+      document.getElementById('levelSelect').innerHTML = `
+        <option value="beginner">Beginner</option>
+        <option value="intermediate">Intermediate</option>
+        <option value="advanced">Advanced</option>`;
       await loadSessionServer();
       const last = sessionMessages.find(m => m.role === 'assistant');
       if (last) outputText.textContent = last.content;
