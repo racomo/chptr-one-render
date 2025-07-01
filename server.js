@@ -6,46 +6,37 @@ const axios = require('axios');
 require('dotenv').config();
 
 // ✅ Initialize OpenAI SDK v4+
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 app.use(express.static(path.join(__dirname)));
 app.use(express.json());
 
-// 🔹 Serve static pages
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
+// 🔹 Serve static HTML pages
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+app.get('/start', (req, res) => res.sendFile(path.join(__dirname, 'start.html')));
 
-app.get('/start', (req, res) => {
-  res.sendFile(path.join(__dirname, 'start.html'));
-});
+// 🔹 In-memory session store (can replace with Redis/Mongo)
+const sessions = {};
 
-// 🎙️ AI Story Generator Route with session context
+// 🎙️ AI Story Generator
 app.post('/api/generate-story', async (req, res) => {
-  const { prompt, messages = [] } = req.body;
-  console.log('📨 Received prompt:', prompt);
+  const { prompt, sessionId, messages = [] } = req.body;
+  console.log('📨 Prompt received:', prompt);
 
   try {
-    const fullMessages = [
-      {
-        role: 'system',
-        content: `Act like an accomplished speechwriter and public speaking coach.
+    const result = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: `Act like an accomplished speechwriter and public speaking coach.
 You mastered every precept from the book "Talk like TED".
 Your expertise lies in crafting captivating and influential TED-style talks for global audiences.
 Structure your response like a compelling story built for listening, not reading. Keep it simple, clear, and emotional.`
-      },
-      ...messages,
-      {
-        role: 'user',
-        content: prompt
-      }
-    ];
-
-    const result = await openai.chat.completions.create({
-      model: 'gpt-4',
-      messages: fullMessages,
+        },
+        ...messages,
+        { role: 'user', content: prompt }
+      ],
       temperature: 0.85,
       max_tokens: 1200
     });
@@ -53,24 +44,25 @@ Structure your response like a compelling story built for listening, not reading
     const story = result.choices?.[0]?.message?.content?.trim();
 
     if (!story) {
-      console.error("❌ No story returned from OpenAI");
-      return res.status(500).json({ error: 'Story generation failed.' });
+      console.error("❌ Empty story returned");
+      return res.status(500).json({ error: 'No story returned' });
+    }
+
+    if (sessionId) {
+      sessions[sessionId] = [...(sessions[sessionId] || []), { role: 'user', content: prompt }, { role: 'assistant', content: story }];
     }
 
     res.json({ text: story });
-  } catch (error) {
-    console.error("❌ Error generating story:", error.response?.data || error.message);
-    res.status(500).json({ error: 'Failed to generate story.' });
+  } catch (err) {
+    console.error("❌ OpenAI error:", err.response?.data || err.message);
+    res.status(500).json({ error: 'Story generation failed' });
   }
 });
 
-// 🔊 ElevenLabs Narration Route
+// 🔊 ElevenLabs Text-to-Speech
 app.post('/api/narrate', async (req, res) => {
   const { text, voiceId } = req.body;
-
-  if (!text || !voiceId) {
-    return res.status(400).json({ error: 'Missing text or voiceId.' });
-  }
+  if (!text || !voiceId) return res.status(400).json({ error: 'Missing text or voiceId' });
 
   try {
     const response = await axios({
@@ -94,12 +86,12 @@ app.post('/api/narrate', async (req, res) => {
     res.set('Content-Type', 'audio/mpeg');
     res.send(response.data);
   } catch (err) {
-    console.error("❌ Narration error:", err.response?.data || err.message);
+    console.error("❌ TTS error:", err.response?.data || err.message);
     res.status(500).json({ error: 'Narration failed' });
   }
 });
 
-// 🔈 Get available voices from ElevenLabs
+// 🔈 Get ElevenLabs Voices
 app.get('/api/get-voices', async (req, res) => {
   try {
     const response = await axios.get('https://api.elevenlabs.io/v1/voices', {
@@ -110,32 +102,30 @@ app.get('/api/get-voices', async (req, res) => {
 
     const voices = response.data.voices || [];
     res.json(voices);
-  } catch (error) {
-    console.error("❌ Failed to fetch voices:", error.response?.data || error.message);
-    res.status(500).json({ error: 'Could not fetch voices' });
+  } catch (err) {
+    console.error("❌ Voice fetch error:", err.response?.data || err.message);
+    res.status(500).json({ error: 'Could not retrieve voices' });
   }
 });
 
-// 💾 In-memory session store (for prototyping)
-const sessions = {};
-
+// 💾 Save Session
 app.post('/api/save-session', (req, res) => {
   const { sessionId, messages } = req.body;
   if (sessionId && Array.isArray(messages)) {
     sessions[sessionId] = messages;
-    res.status(200).json({ success: true });
+    res.json({ success: true });
   } else {
     res.status(400).json({ error: 'Invalid session data' });
   }
 });
 
+// 📥 Retrieve Session
 app.get('/api/get-session', (req, res) => {
   const { sessionId } = req.query;
-  const messages = sessions[sessionId] || [];
-  res.json({ messages });
+  res.json({ messages: sessions[sessionId] || [] });
 });
 
-// 🌍 Port Listener
+// 🚀 Start Server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
