@@ -13,9 +13,6 @@
       margin: 0;
       padding: 2rem;
       color: #333;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
     }
 
     header {
@@ -63,7 +60,6 @@
       margin-top: 1rem;
       white-space: pre-wrap;
       max-width: 700px;
-      text-align: left;
     }
 
     footer {
@@ -84,13 +80,14 @@
     <h1>🎙️ Start Your Chptr One</h1>
   </header>
 
-  <input id="nameInput" placeholder="🧑‍🎓 What’s your name?" />
+  <label for="userName">👤 Your Name:</label>
+  <input type="text" id="userName" placeholder="First name" />
 
   <label for="languageSelect">🌍 Language:</label>
   <select id="languageSelect">
     <option>English</option>
-    <option>Danish</option>
     <option>Spanish</option>
+    <option>Danish</option>
     <option>French</option>
   </select>
 
@@ -115,52 +112,72 @@
   </footer>
 
   <script>
-    const nameInput = document.getElementById('nameInput');
-    const languageSelect = document.getElementById('languageSelect');
-    const levelSelect = document.getElementById('levelSelect');
     const voiceSelect = document.getElementById('voiceSelect');
+    const languageSelect = document.getElementById('languageSelect');
     const generateButton = document.getElementById('generateBtn');
     const askButton = document.getElementById('askBtn');
     const audioPlayer = document.getElementById('audioPlayer');
     const outputText = document.getElementById('outputText');
+    const userNameInput = document.getElementById('userName');
 
     const sessionId = localStorage.getItem('sessionId') || crypto.randomUUID();
     localStorage.setItem('sessionId', sessionId);
+
     let sessionMessages = JSON.parse(localStorage.getItem('sessionMessages')) || [];
 
-    async function loadVoices() {
-      const lang = languageSelect.value;
+    async function loadVoices(language) {
       const response = await fetch('/api/get-voices');
       const voices = await response.json();
       voiceSelect.innerHTML = '';
-      const filtered = voices.filter(v => {
-        const accent = v.labels?.accent?.toLowerCase() || '';
-        return lang === 'English' ? accent.includes('american') || accent.includes('british')
-             : lang === 'French' ? accent.includes('french')
-             : lang === 'Spanish' ? accent.includes('spanish')
-             : lang === 'Danish' ? accent.includes('danish')
-             : false;
+      const langVoices = {
+        English: ['Rachel', 'Domi', 'Clyde', 'Matthew', 'Steve'],
+        Spanish: ['Antonio', 'Lupe'],
+        Danish: ['Freja', 'Naja', 'Liam'],
+        French: ['Chloe', 'Remi', 'Antoine']
+      };
+      voices
+        .filter(v => langVoices[language]?.includes(v.name))
+        .forEach(voice => {
+          const option = document.createElement('option');
+          option.value = voice.voice_id;
+          option.textContent = `${voice.name}`;
+          voiceSelect.appendChild(option);
+        });
+    }
+
+    languageSelect.addEventListener('change', () => {
+      loadVoices(languageSelect.value);
+    });
+
+    function saveSessionLocally() {
+      localStorage.setItem('sessionMessages', JSON.stringify(sessionMessages));
+    }
+
+    async function saveSessionServer() {
+      await fetch('/api/save-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, messages: sessionMessages })
       });
-      filtered.forEach(voice => {
-        const option = document.createElement('option');
-        option.value = voice.voice_id;
-        option.textContent = `${voice.name} (${voice.labels?.accent || 'Default'})`;
-        voiceSelect.appendChild(option);
-      });
+    }
+
+    async function loadSessionServer() {
+      const res = await fetch(`/api/get-session?sessionId=${sessionId}`);
+      const data = await res.json();
+      sessionMessages = data.messages || [];
     }
 
     async function generateStory(promptText) {
       const voiceId = voiceSelect.value;
-      const userName = nameInput.value || 'friend';
+      const userName = userNameInput.value.trim() || 'friend';
       if (!voiceId) return;
 
-      const fullPrompt = `${promptText} Please personalize it for someone named ${userName}.`;
-      sessionMessages.push({ role: 'user', content: fullPrompt });
+      sessionMessages.push({ role: 'user', content: promptText });
 
       const response = await fetch('/api/generate-story', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: fullPrompt, sessionId, messages: sessionMessages })
+        body: JSON.stringify({ prompt: promptText, sessionId, messages: sessionMessages, userName })
       });
 
       const data = await response.json();
@@ -169,7 +186,8 @@
 
       outputText.textContent = story;
       sessionMessages.push({ role: 'assistant', content: story });
-      localStorage.setItem('sessionMessages', JSON.stringify(sessionMessages));
+      saveSessionLocally();
+      await saveSessionServer();
 
       const ttsResponse = await fetch('/api/narrate', {
         method: 'POST',
@@ -184,9 +202,9 @@
     }
 
     generateButton.addEventListener('click', () => {
-      const lang = languageSelect.value;
-      const level = levelSelect.value;
-      const prompt = `Act like a TED speaker. Explain AI to a ${level} learner in ${lang}.`;
+      const language = languageSelect.value;
+      const level = document.getElementById('levelSelect').value;
+      const prompt = `Explain AI in ${language} at ${level} level.`;
       generateStory(prompt);
     });
 
@@ -198,7 +216,9 @@
       recognition.interimResults = false;
       recognition.maxAlternatives = 1;
 
-      recognition.onstart = () => outputText.textContent = "🎤 Listening...";
+      recognition.onstart = () => {
+        outputText.textContent = "🎤 Listening...";
+      };
 
       recognition.onresult = (event) => {
         const question = event.results[0][0].transcript;
@@ -214,15 +234,12 @@
     });
 
     window.onload = async () => {
-      await loadVoices();
-      await fetch(`/api/get-session?sessionId=${sessionId}`)
-        .then(res => res.json())
-        .then(data => {
-          sessionMessages = data.messages || [];
-          const last = sessionMessages.find(m => m.role === 'assistant');
-          if (last) outputText.textContent = last.content;
-        });
-      languageSelect.addEventListener('change', loadVoices);
+      document.getElementById('levelSelect').value = 'beginner';
+      languageSelect.value = 'English';
+      await loadVoices('English');
+      await loadSessionServer();
+      const last = sessionMessages.find(m => m.role === 'assistant');
+      if (last) outputText.textContent = last.content;
     };
   </script>
 </body>
