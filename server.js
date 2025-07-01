@@ -117,3 +117,21 @@ app.get('/api/get-voices', async (req, res) => {
     res.status(500).json({ error: 'Could not fetch voices' });
   }
 });
+// In-memory session store (or replace with Redis/Mongo later)
+const sessions = {};
+
+app.post('/api/save-session', (req, res) => {
+  const { sessionId, messages } = req.body;
+  if (sessionId && Array.isArray(messages)) {
+    sessions[sessionId] = messages;
+    res.status(200).json({ success: true });
+  } else {
+    res.status(400).json({ error: 'Invalid session data' });
+  }
+});
+
+app.get('/api/get-session', (req, res) => {
+  const { sessionId } = req.query;
+  const messages = sessions[sessionId] || [];
+  res.json({ messages });
+});
