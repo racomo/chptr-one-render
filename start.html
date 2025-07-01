@@ -182,16 +182,29 @@
     });
 
     askButton.addEventListener('click', () => {
+      if (audioPlayer && !audioPlayer.paused) {
+        audioPlayer.pause();
+      }
+
       const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
       recognition.lang = 'en-US';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => {
+        outputText.textContent = "🎤 Listening...";
+      };
+
       recognition.onresult = (event) => {
         const question = event.results[0][0].transcript;
         outputText.textContent = `🎤 You asked: ${question}`;
         generateStory(question);
       };
+
       recognition.onerror = (event) => {
         outputText.textContent = `❌ Error: ${event.error}`;
       };
+
       recognition.start();
     });
 
