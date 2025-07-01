@@ -101,3 +101,19 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
+// 🔈 Get available voices from ElevenLabs
+app.get('/api/get-voices', async (req, res) => {
+  try {
+    const response = await axios.get('https://api.elevenlabs.io/v1/voices', {
+      headers: {
+        'xi-api-key': process.env.ELEVENLABS_API_KEY
+      }
+    });
+
+    const voices = response.data.voices || [];
+    res.json(voices);
+  } catch (error) {
+    console.error("❌ Failed to fetch voices:", error.response?.data || error.message);
+    res.status(500).json({ error: 'Could not fetch voices' });
+  }
+});
