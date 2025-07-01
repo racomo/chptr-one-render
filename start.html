@@ -27,6 +27,14 @@
       margin-top: 1rem;
       white-space: pre-wrap;
     }
+    #nextBtn {
+      display: none;
+      margin-top: 1rem;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -58,19 +66,16 @@
 
   <br />
 
-  <!-- Action buttons -->
   <button id="generateBtn">Generate AI Story</button>
-  <button id="continueBtn" disabled>▶️ Continue Story</button>
+  <button id="nextBtn">➡️ Continue to Next Story</button>
 
   <div id="outputText">🧠 Waiting for your prompt...</div>
   <audio id="audioPlayer" controls></audio>
 
   <script>
-    console.log("✅ JavaScript connected");
-
     const voiceSelect = document.getElementById('voiceSelect');
     const generateButton = document.getElementById('generateBtn');
-    const continueButton = document.getElementById('continueBtn');
+    const nextButton = document.getElementById('nextBtn');
     const audioPlayer = document.getElementById('audioPlayer');
     const outputText = document.getElementById('outputText');
 
@@ -78,6 +83,7 @@
       try {
         const response = await fetch('/api/get-voices');
         const voices = await response.json();
+
         voiceSelect.innerHTML = '';
         voices.forEach(voice => {
           const option = document.createElement('option');
@@ -85,6 +91,7 @@
           option.textContent = `${voice.name} (${voice.labels?.accent || 'Default'})`;
           voiceSelect.appendChild(option);
         });
+
         console.log('✅ Voices loaded:', voices);
       } catch (error) {
         console.error('❌ Failed to fetch voices:', error);
@@ -92,7 +99,7 @@
       }
     }
 
-    async function generateAudio() {
+    async function generateAudio(nextPrompt = null) {
       const language = document.getElementById('languageSelect').value;
       const level = document.getElementById('levelSelect').value;
       const voiceId = voiceSelect.value;
@@ -102,7 +109,7 @@
         return;
       }
 
-      const prompt = `Act like an accomplished speechwriter and public speaking coach.
+      const prompt = nextPrompt || `Act like an accomplished speechwriter and public speaking coach.
 You mastered every precept from the book "Talk like TED".
 Your expertise lies in crafting captivating and influential speeches, with a specialization in TED-style presentations.
 
@@ -128,6 +135,7 @@ End with a powerful call to action that makes AI feel exciting and doable for so
       try {
         outputText.textContent = '🧠 Generating story...';
         generateButton.disabled = true;
+        nextButton.style.display = 'none';
 
         const gptResponse = await fetch('/api/generate-story', {
           method: 'POST',
@@ -144,8 +152,6 @@ End with a powerful call to action that makes AI feel exciting and doable for so
         }
 
         outputText.textContent = story;
-        sessionStorage.setItem('lastStory', story);
-        continueButton.disabled = false;
 
         const ttsResponse = await fetch('/api/narrate', {
           method: 'POST',
@@ -162,6 +168,12 @@ End with a powerful call to action that makes AI feel exciting and doable for so
         const audioUrl = URL.createObjectURL(audioBlob);
         audioPlayer.src = audioUrl;
         audioPlayer.play();
+
+        // When audio ends, allow continuation
+        audioPlayer.onended = () => {
+          nextButton.style.display = 'inline-block';
+        };
+
       } catch (err) {
         console.error('⚠️ Error:', err);
         outputText.textContent = 'Something went wrong. Please try again.';
@@ -170,61 +182,13 @@ End with a powerful call to action that makes AI feel exciting and doable for so
       }
     }
 
-    async function continueStory() {
-      const lastStory = sessionStorage.getItem('lastStory');
-      const voiceId = voiceSelect.value;
-
-      if (!lastStory) {
-        outputText.textContent = '⚠️ No previous story found.';
-        return;
-      }
-
-      const continuationPrompt = `Please continue this TED-style story in the same tone and level as before. Pick up from where it ended, without repeating:\n\n${lastStory}`;
-
-      try {
-        outputText.textContent = '🔁 Continuing the story...';
-        continueButton.disabled = true;
-
-        const response = await fetch('/api/generate-story', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt: continuationPrompt })
-        });
-
-        const data = await response.json();
-        const continuation = data.text;
-
-        if (!continuation) {
-          outputText.textContent = '❌ Failed to continue story.';
-          return;
-        }
-
-        const fullStory = lastStory + '\n\n' + continuation;
-        sessionStorage.setItem('lastStory', fullStory);
-        outputText.textContent = continuation;
-
-        const narration = await fetch('/api/narrate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: continuation, voiceId })
-        });
-
-        const blob = await narration.blob();
-        const audioURL = URL.createObjectURL(blob);
-        audioPlayer.src = audioURL;
-        audioPlayer.play();
-        continueButton.disabled = false;
-      } catch (err) {
-        console.error("❌ Error continuing story:", err);
-        outputText.textContent = '❌ Could not continue the story.';
-      }
-    }
-
     window.onload = () => {
-      console.log('✅ Page loaded. Initializing...');
       loadVoices();
-      generateButton.addEventListener('click', generateAudio);
-      continueButton.addEventListener('click', continueStory);
+      generateButton.addEventListener('click', () => generateAudio());
+      nextButton.addEventListener('click', () => {
+        const followUpPrompt = `Now continue the story. Build upon the user's previous interest and explain how AI could help them in everyday work. Use storytelling, vivid examples, and finish with a real-life application from the user's environment.`;
+        generateAudio(followUpPrompt);
+      });
     };
   </script>
 </body>
