@@ -11,12 +11,8 @@ app.use(express.static(path.join(__dirname)));
 app.use(express.json());
 
 // 🌍 Serve Static Pages
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
-app.get('/start', (req, res) => {
-  res.sendFile(path.join(__dirname, 'start.html'));
-});
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+app.get('/start', (req, res) => res.sendFile(path.join(__dirname, 'start.html')));
 
 // 🧠 In-Memory Session Store
 const sessions = {};
@@ -38,10 +34,9 @@ app.post('/api/save-session', (req, res) => {
   }
 });
 
-// 🧠 Generate Personalized Story
+// 🧠 Generate Personalized Story (with parallel TTS preload)
 app.post('/api/generate-story', async (req, res) => {
-  const { prompt, sessionId, messages = [], userName, language, level } = req.body;
-
+  const { prompt, sessionId, messages = [], userName, voiceId } = req.body;
   console.log(`📝 [${userName || 'User'}] Prompt:`, prompt);
 
   try {
@@ -50,16 +45,10 @@ app.post('/api/generate-story', async (req, res) => {
       messages: [
         {
           role: 'system',
-          content: `You are a brilliant TED-style narrator giving an emotionally intelligent, personalized talk to one person — ${userName}. 
-Speak directly to them. Their language is ${language || 'English'}, and their learning level is ${level || 'beginner'}.
-Use warmth, analogies, and light storytelling. Make each response feel like the story is unfolding with their guidance. 
-Never repeat earlier content. Invite them to continue at the end.`
+          content: `You're an accomplished TED-style speaker. Your job is to create a highly personal talk, tailored to one person — named ${userName || "the listener"}. Make the tone inspiring and emotionally engaging, and adjust the depth to match their learning level. End with a natural pause or invitation to continue.`
         },
         ...messages,
-        {
-          role: 'user',
-          content: prompt
-        }
+        { role: 'user', content: prompt }
       ],
       temperature: 0.85,
       max_tokens: 1200
@@ -71,8 +60,32 @@ Never repeat earlier content. Invite them to continue at the end.`
       return res.status(500).json({ error: 'Story generation failed.' });
     }
 
+    // Save to session
     if (sessionId) {
       sessions[sessionId] = [...messages, { role: 'assistant', content: story }];
+    }
+
+    // 🔊 Preload ElevenLabs narration in background
+    if (voiceId) {
+      axios({
+        method: 'POST',
+        url: `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
+        headers: {
+          'xi-api-key': process.env.ELEVENLABS_API_KEY,
+          'Content-Type': 'application/json'
+        },
+        responseType: 'arraybuffer',
+        data: {
+          text: story,
+          model_id: 'eleven_monolingual_v1',
+          voice_settings: {
+            stability: 0.5,
+            similarity_boost: 0.7
+          }
+        }
+      }).catch(err => {
+        console.warn('⚠️ Narration preload failed:', err.message);
+      });
     }
 
     res.json({ text: story });
@@ -82,13 +95,10 @@ Never repeat earlier content. Invite them to continue at the end.`
   }
 });
 
-// 🔊 ElevenLabs Narration
+// 🔊 ElevenLabs Narration (called explicitly by frontend)
 app.post('/api/narrate', async (req, res) => {
   const { text, voiceId } = req.body;
-
-  if (!text || !voiceId) {
-    return res.status(400).json({ error: 'Missing text or voiceId.' });
-  }
+  if (!text || !voiceId) return res.status(400).json({ error: 'Missing text or voiceId.' });
 
   try {
     const response = await axios({
@@ -117,7 +127,7 @@ app.post('/api/narrate', async (req, res) => {
   }
 });
 
-// 🎙️ Fetch ElevenLabs Voices
+// 🎙️ Fetch Available Voices
 app.get('/api/get-voices', async (req, res) => {
   try {
     const response = await axios.get('https://api.elevenlabs.io/v1/voices', {
@@ -132,7 +142,7 @@ app.get('/api/get-voices', async (req, res) => {
   }
 });
 
-// 🚀 Start Server
+// 🚀 Launch Server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
