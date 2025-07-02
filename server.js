@@ -40,7 +40,7 @@ app.post('/api/save-session', (req, res) => {
 
 // 🧠 Generate Personalized Story
 app.post('/api/generate-story', async (req, res) => {
-  const { prompt, sessionId, messages = [], userName } = req.body;
+  const { prompt, sessionId, messages = [], userName, language, level } = req.body;
 
   console.log(`📝 [${userName || 'User'}] Prompt:`, prompt);
 
@@ -50,7 +50,10 @@ app.post('/api/generate-story', async (req, res) => {
       messages: [
         {
           role: 'system',
-          content: `You're an accomplished TED-style speaker. Your job is to create a highly personal talk, tailored to one person — named ${userName || "the listener"}. Make the tone inspiring and emotionally engaging, and adjust the depth to match their learning level. End with a natural pause or invitation to continue.`
+          content: `You are a brilliant TED-style narrator giving an emotionally intelligent, personalized talk to one person — ${userName}. 
+Speak directly to them. Their language is ${language || 'English'}, and their learning level is ${level || 'beginner'}.
+Use warmth, analogies, and light storytelling. Make each response feel like the story is unfolding with their guidance. 
+Never repeat earlier content. Invite them to continue at the end.`
         },
         ...messages,
         {
@@ -68,8 +71,9 @@ app.post('/api/generate-story', async (req, res) => {
       return res.status(500).json({ error: 'Story generation failed.' });
     }
 
-    // Save latest messages in memory
-    if (sessionId) sessions[sessionId] = [...messages, { role: 'assistant', content: story }];
+    if (sessionId) {
+      sessions[sessionId] = [...messages, { role: 'assistant', content: story }];
+    }
 
     res.json({ text: story });
   } catch (error) {
