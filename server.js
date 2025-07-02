@@ -3,33 +3,36 @@ const app = express();
 const path = require('path');
 const OpenAI = require('openai');
 const axios = require('axios');
+const compression = require('compression');
+const helmet = require('helmet');
+const morgan = require('morgan');
 require('dotenv').config();
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// Middleware
+app.use(compression());
+app.use(helmet());
+app.use(morgan('tiny'));
+app.use(express.json({ limit: '1mb' }));
 app.use(express.static(path.join(__dirname), {
-  maxAge: '1d', // Cache static files for 1 day
+  maxAge: '1d',
+  etag: false
 }));
-app.use(express.json());
 
-// 🧠 In-Memory Session Store
+// Simple in-memory session store
 const sessions = {};
 
-// 🌍 Static Pages
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
-app.get('/start', (req, res) => {
-  res.sendFile(path.join(__dirname, 'start.html'));
-});
+// 🌍 Serve Static Pages
+app.get('/', (_, res) => res.sendFile(path.join(__dirname, 'index.html')));
+app.get('/start', (_, res) => res.sendFile(path.join(__dirname, 'start.html')));
 
-// 🔹 Get Saved Session
+// 🔹 Session APIs
 app.get('/api/get-session', (req, res) => {
   const { sessionId } = req.query;
   res.json({ messages: sessions[sessionId] || [] });
 });
 
-// 🔹 Save Session
 app.post('/api/save-session', (req, res) => {
   const { sessionId, messages } = req.body;
   if (sessionId && Array.isArray(messages)) {
@@ -40,7 +43,7 @@ app.post('/api/save-session', (req, res) => {
   }
 });
 
-// 🧠 Generate Personalized Story
+// 🧠 Generate AI Story
 app.post('/api/generate-story', async (req, res) => {
   const { prompt, sessionId, messages = [], userName } = req.body;
 
@@ -52,7 +55,7 @@ app.post('/api/generate-story', async (req, res) => {
       messages: [
         {
           role: 'system',
-          content: `You're an accomplished TED-style speaker. Your job is to create a highly personal talk, tailored to one person — named ${userName || "the listener"}. Make the tone inspiring and emotionally engaging, and adjust the depth to match their learning level. End with a natural pause or invitation to continue.`
+          content: `You're an inspiring TED-style speaker. Craft an emotionally engaging monologue for one listener — ${userName || "the user"}. Match their level, and use personal, direct tone. End naturally or invite them to continue.`
         },
         ...messages,
         {
@@ -70,7 +73,6 @@ app.post('/api/generate-story', async (req, res) => {
       return res.status(500).json({ error: 'Story generation failed.' });
     }
 
-    // Save latest messages in memory
     if (sessionId) sessions[sessionId] = [...messages, { role: 'assistant', content: story }];
 
     res.json({ text: story });
@@ -94,9 +96,11 @@ app.post('/api/narrate', async (req, res) => {
       url: `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
       headers: {
         'xi-api-key': process.env.ELEVENLABS_API_KEY,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Connection': 'keep-alive'
       },
       responseType: 'arraybuffer',
+      timeout: 15000,
       data: {
         text,
         model_id: 'eleven_monolingual_v1',
@@ -108,7 +112,6 @@ app.post('/api/narrate', async (req, res) => {
     });
 
     res.set('Content-Type', 'audio/mpeg');
-    res.set('Cache-Control', 'no-store');
     res.send(response.data);
   } catch (err) {
     console.error("❌ Narration error:", err.response?.data || err.message);
@@ -116,11 +119,15 @@ app.post('/api/narrate', async (req, res) => {
   }
 });
 
-// 🎙️ Fetch ElevenLabs Voices
-app.get('/api/get-voices', async (req, res) => {
+// 🎙️ Get ElevenLabs Voices
+app.get('/api/get-voices', async (_, res) => {
   try {
     const response = await axios.get('https://api.elevenlabs.io/v1/voices', {
-      headers: { 'xi-api-key': process.env.ELEVENLABS_API_KEY }
+      headers: {
+        'xi-api-key': process.env.ELEVENLABS_API_KEY,
+        'Connection': 'keep-alive'
+      },
+      timeout: 10000
     });
 
     const voices = response.data.voices || [];
@@ -131,8 +138,8 @@ app.get('/api/get-voices', async (req, res) => {
   }
 });
 
-// 🚀 Start Server
+// 🚀 Launch Server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`🚀 Optimized server running on http://localhost:${PORT}`);
 });
