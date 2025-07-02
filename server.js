@@ -10,7 +10,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 app.use(express.static(path.join(__dirname)));
 app.use(express.json());
 
-// 🌍 Serve static HTML
+// Serve static pages
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -18,16 +18,16 @@ app.get('/start', (req, res) => {
   res.sendFile(path.join(__dirname, 'start.html'));
 });
 
-// 🧠 In-memory session store
+// In-memory session store
 const sessions = {};
 
-// 🔹 Get saved session
+// Get saved session
 app.get('/api/get-session', (req, res) => {
   const { sessionId } = req.query;
   res.json({ messages: sessions[sessionId] || [] });
 });
 
-// 🔹 Save session
+// Save session
 app.post('/api/save-session', (req, res) => {
   const { sessionId, messages } = req.body;
   if (sessionId && Array.isArray(messages)) {
@@ -38,11 +38,10 @@ app.post('/api/save-session', (req, res) => {
   }
 });
 
-// 🧠 Generate TED-style story
+// Generate AI story
 app.post('/api/generate-story', async (req, res) => {
   const { prompt, sessionId, messages = [], userName } = req.body;
-
-  console.log(`🧠 Generating for ${userName || 'User'} → ${prompt.slice(0, 60)}...`);
+  console.log(`📝 [${userName || 'User'}] Prompt:`, prompt);
 
   try {
     const result = await openai.chat.completions.create({
@@ -50,13 +49,13 @@ app.post('/api/generate-story', async (req, res) => {
       messages: [
         {
           role: 'system',
-          content: `You're an accomplished TED-style speaker. Your job is to create a highly personal talk, tailored to one person — named ${userName || "the listener"}. Make the tone inspiring and emotionally engaging, and adjust the depth to match their learning level. End with a natural pause or invitation to continue.`
+          content: `You are an AI storytelling coach giving a highly personalized TED-style monologue to ${userName || 'the listener'}.
+Speak directly to them with empathy and warmth. Respect interruptions.
+If the user asks a question, acknowledge it and respond naturally before continuing the story.
+Always end with a prompt to continue if the user wishes.`
         },
         ...messages,
-        {
-          role: 'user',
-          content: prompt
-        }
+        { role: 'user', content: prompt }
       ],
       temperature: 0.85,
       max_tokens: 1200
@@ -68,7 +67,10 @@ app.post('/api/generate-story', async (req, res) => {
       return res.status(500).json({ error: 'Story generation failed.' });
     }
 
-    if (sessionId) sessions[sessionId] = [...messages, { role: 'user', content: prompt }, { role: 'assistant', content: story }];
+    // Update session store
+    if (sessionId) {
+      sessions[sessionId] = [...messages, { role: 'assistant', content: story }];
+    }
 
     res.json({ text: story });
   } catch (error) {
@@ -77,10 +79,9 @@ app.post('/api/generate-story', async (req, res) => {
   }
 });
 
-// 🔊 ElevenLabs narration
+// Narrate story via ElevenLabs
 app.post('/api/narrate', async (req, res) => {
   const { text, voiceId } = req.body;
-
   if (!text || !voiceId) {
     return res.status(400).json({ error: 'Missing text or voiceId.' });
   }
@@ -98,7 +99,7 @@ app.post('/api/narrate', async (req, res) => {
         text,
         model_id: 'eleven_monolingual_v1',
         voice_settings: {
-          stability: 0.5,
+          stability: 0.45,
           similarity_boost: 0.7
         }
       }
@@ -112,7 +113,7 @@ app.post('/api/narrate', async (req, res) => {
   }
 });
 
-// 🎙️ Get available voices
+// Fetch voices from ElevenLabs
 app.get('/api/get-voices', async (req, res) => {
   try {
     const response = await axios.get('https://api.elevenlabs.io/v1/voices', {
@@ -127,7 +128,7 @@ app.get('/api/get-voices', async (req, res) => {
   }
 });
 
-// 🚀 Launch server
+// Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
