@@ -119,34 +119,18 @@
     async function loadVoices(languageCode) {
       const response = await fetch('/api/get-voices');
       const voices = await response.json();
-
       voiceSelect.innerHTML = '';
-      const langTags = {
-        en: ['english', 'us', 'uk'],
-        fr: ['french'],
-        es: ['spanish'],
-        da: ['danish']
-      };
-      const matchers = langTags[languageCode] || [];
-
-      const matched = voices.filter(v => {
-        const allText = `${v.name} ${v.labels?.language || ''} ${v.labels?.accent || ''}`.toLowerCase();
-        return matchers.some(tag => allText.includes(tag));
-      });
-
-      if (matched.length === 0) {
-        const opt = document.createElement('option');
-        opt.textContent = '❌ No matching voices';
-        voiceSelect.appendChild(opt);
-        return;
+      const filtered = voices.filter(v => v.labels?.language?.toLowerCase().startsWith(languageCode));
+      if (filtered.length === 0) {
+        voiceSelect.innerHTML = '<option disabled selected>No voices available for this language</option>';
+      } else {
+        filtered.forEach(voice => {
+          const option = document.createElement('option');
+          option.value = voice.voice_id;
+          option.textContent = `${voice.name} (${voice.labels?.accent || 'Default'})`;
+          voiceSelect.appendChild(option);
+        });
       }
-
-      matched.forEach(v => {
-        const opt = document.createElement('option');
-        opt.value = v.voice_id;
-        opt.textContent = `${v.name} (${v.labels?.accent || 'Default'})`;
-        voiceSelect.appendChild(opt);
-      });
     }
 
     function saveSessionLocally() {
@@ -174,6 +158,8 @@
         alert("Please enter your name and choose a voice.");
         return;
       }
+
+      if (!audioPlayer.paused) audioPlayer.pause();
 
       sessionMessages.push({ role: 'user', content: promptText });
 
@@ -210,30 +196,35 @@
       const langText = languageSelect.options[languageSelect.selectedIndex].text;
       const level = levelSelect.value;
       const name = userName.value.trim();
-      const prompt = `Explain AI to ${name}, using ${langText} and keeping it at a ${level} level. Make it feel like a personal TED Talk.`;
+      const prompt = `Explain AI to ${name}, using ${langText}, keeping it at a ${level} level. Make it feel like a personal TED Talk.`;
       generateStory(prompt);
     });
 
     continueBtn.addEventListener('click', () => {
       const name = userName.value.trim();
       const level = levelSelect.value;
-      const prompt = `Continue the story with more depth, keeping the ${level} level, and still speaking directly to ${name}.`;
+      const prompt = `Continue the story with more insights at ${level} level and keep addressing ${name} personally.`;
       generateStory(prompt);
     });
 
     askBtn.addEventListener('click', () => {
-      if (audioPlayer && !audioPlayer.paused) audioPlayer.pause();
+      if (!audioPlayer.paused) audioPlayer.pause();
 
       const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-      recognition.lang = 'en-US';
+      recognition.lang = languageSelect.value === 'da' ? 'da-DK' :
+                         languageSelect.value === 'es' ? 'es-ES' :
+                         languageSelect.value === 'fr' ? 'fr-FR' : 'en-US';
+
       recognition.onresult = (event) => {
         const question = event.results[0][0].transcript;
         outputText.textContent = `🎤 You asked: ${question}`;
         generateStory(question);
       };
+
       recognition.onerror = (event) => {
         outputText.textContent = `❌ Error: ${event.error}`;
       };
+
       recognition.start();
     });
 
@@ -245,10 +236,7 @@
       await loadVoices(languageSelect.value);
       await loadSessionServer();
       const last = sessionMessages.find(m => m.role === 'assistant');
-      if (last) {
-        outputText.textContent = last.content;
-        continueBtn.style.display = 'block';
-      }
+      if (last) outputText.textContent = last.content;
     };
   </script>
 </body>
