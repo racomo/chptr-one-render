@@ -10,7 +10,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 app.use(express.static(path.join(__dirname)));
 app.use(express.json());
 
-// 🌍 Serve Static Pages
+// 🌍 Serve static HTML
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -18,16 +18,16 @@ app.get('/start', (req, res) => {
   res.sendFile(path.join(__dirname, 'start.html'));
 });
 
-// 🧠 In-Memory Session Store
+// 🧠 In-memory session store
 const sessions = {};
 
-// 🔹 Get Saved Session
+// 🔹 Get saved session
 app.get('/api/get-session', (req, res) => {
   const { sessionId } = req.query;
   res.json({ messages: sessions[sessionId] || [] });
 });
 
-// 🔹 Save Session
+// 🔹 Save session
 app.post('/api/save-session', (req, res) => {
   const { sessionId, messages } = req.body;
   if (sessionId && Array.isArray(messages)) {
@@ -38,11 +38,11 @@ app.post('/api/save-session', (req, res) => {
   }
 });
 
-// 🧠 Generate Personalized Story
+// 🧠 Generate TED-style story
 app.post('/api/generate-story', async (req, res) => {
   const { prompt, sessionId, messages = [], userName } = req.body;
 
-  console.log(`📝 [${userName || 'User'}] Prompt:`, prompt);
+  console.log(`🧠 Generating for ${userName || 'User'} → ${prompt.slice(0, 60)}...`);
 
   try {
     const result = await openai.chat.completions.create({
@@ -68,8 +68,7 @@ app.post('/api/generate-story', async (req, res) => {
       return res.status(500).json({ error: 'Story generation failed.' });
     }
 
-    // Save latest messages in memory
-    if (sessionId) sessions[sessionId] = [...messages, { role: 'assistant', content: story }];
+    if (sessionId) sessions[sessionId] = [...messages, { role: 'user', content: prompt }, { role: 'assistant', content: story }];
 
     res.json({ text: story });
   } catch (error) {
@@ -78,7 +77,7 @@ app.post('/api/generate-story', async (req, res) => {
   }
 });
 
-// 🔊 ElevenLabs Narration
+// 🔊 ElevenLabs narration
 app.post('/api/narrate', async (req, res) => {
   const { text, voiceId } = req.body;
 
@@ -113,7 +112,7 @@ app.post('/api/narrate', async (req, res) => {
   }
 });
 
-// 🎙️ Fetch ElevenLabs Voices
+// 🎙️ Get available voices
 app.get('/api/get-voices', async (req, res) => {
   try {
     const response = await axios.get('https://api.elevenlabs.io/v1/voices', {
@@ -128,7 +127,7 @@ app.get('/api/get-voices', async (req, res) => {
   }
 });
 
-// 🚀 Start Server with Dynamic Port Binding (for Render, etc.)
+// 🚀 Launch server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
