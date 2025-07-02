@@ -115,22 +115,38 @@
     const sessionId = localStorage.getItem('sessionId') || crypto.randomUUID();
     localStorage.setItem('sessionId', sessionId);
     let sessionMessages = JSON.parse(localStorage.getItem('sessionMessages')) || [];
-    let voiceCache = [];
 
     async function loadVoices(languageCode) {
-      if (voiceCache.length === 0) {
-        const response = await fetch('/api/get-voices');
-        voiceCache = await response.json();
-      }
+      const response = await fetch('/api/get-voices');
+      const voices = await response.json();
+
       voiceSelect.innerHTML = '';
-      voiceCache
-        .filter(v => v.labels?.language?.toLowerCase().startsWith(languageCode))
-        .forEach(voice => {
-          const option = document.createElement('option');
-          option.value = voice.voice_id;
-          option.textContent = `${voice.name} (${voice.labels?.accent || 'Default'})`;
-          voiceSelect.appendChild(option);
-        });
+      const langTags = {
+        en: ['english', 'us', 'uk'],
+        fr: ['french'],
+        es: ['spanish'],
+        da: ['danish']
+      };
+      const matchers = langTags[languageCode] || [];
+
+      const matched = voices.filter(v => {
+        const allText = `${v.name} ${v.labels?.language || ''} ${v.labels?.accent || ''}`.toLowerCase();
+        return matchers.some(tag => allText.includes(tag));
+      });
+
+      if (matched.length === 0) {
+        const opt = document.createElement('option');
+        opt.textContent = '❌ No matching voices';
+        voiceSelect.appendChild(opt);
+        return;
+      }
+
+      matched.forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v.voice_id;
+        opt.textContent = `${v.name} (${v.labels?.accent || 'Default'})`;
+        voiceSelect.appendChild(opt);
+      });
     }
 
     function saveSessionLocally() {
@@ -229,7 +245,10 @@
       await loadVoices(languageSelect.value);
       await loadSessionServer();
       const last = sessionMessages.find(m => m.role === 'assistant');
-      if (last) outputText.textContent = last.content;
+      if (last) {
+        outputText.textContent = last.content;
+        continueBtn.style.display = 'block';
+      }
     };
   </script>
 </body>
