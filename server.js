@@ -10,20 +10,21 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 app.use(express.static(path.join(__dirname)));
 app.use(express.json());
 
-// 🌍 Serve Static Pages
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get('/start', (req, res) => res.sendFile(path.join(__dirname, 'start.html')));
 
-// 🧠 In-Memory Session Store
+// 🧠 In-memory sessions and voice cache
 const sessions = {};
+let voiceCache = null;
+let lastVoiceFetch = 0;
 
-// 🔹 Get Saved Session
+// 📦 Get saved session
 app.get('/api/get-session', (req, res) => {
   const { sessionId } = req.query;
   res.json({ messages: sessions[sessionId] || [] });
 });
 
-// 🔹 Save Session
+// 💾 Save session
 app.post('/api/save-session', (req, res) => {
   const { sessionId, messages } = req.body;
   if (sessionId && Array.isArray(messages)) {
@@ -34,9 +35,9 @@ app.post('/api/save-session', (req, res) => {
   }
 });
 
-// 🧠 Generate Personalized Story (with parallel TTS preload)
+// 🧠 Generate personalized story with streaming
 app.post('/api/generate-story', async (req, res) => {
-  const { prompt, sessionId, messages = [], userName, voiceId } = req.body;
+  const { prompt, sessionId, messages = [], userName } = req.body;
   console.log(`📝 [${userName || 'User'}] Prompt:`, prompt);
 
   try {
@@ -60,44 +61,18 @@ app.post('/api/generate-story', async (req, res) => {
       return res.status(500).json({ error: 'Story generation failed.' });
     }
 
-    // Save to session
-    if (sessionId) {
-      sessions[sessionId] = [...messages, { role: 'assistant', content: story }];
-    }
-
-    // 🔊 Preload ElevenLabs narration in background
-    if (voiceId) {
-      axios({
-        method: 'POST',
-        url: `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
-        headers: {
-          'xi-api-key': process.env.ELEVENLABS_API_KEY,
-          'Content-Type': 'application/json'
-        },
-        responseType: 'arraybuffer',
-        data: {
-          text: story,
-          model_id: 'eleven_monolingual_v1',
-          voice_settings: {
-            stability: 0.5,
-            similarity_boost: 0.7
-          }
-        }
-      }).catch(err => {
-        console.warn('⚠️ Narration preload failed:', err.message);
-      });
-    }
-
+    if (sessionId) sessions[sessionId] = [...messages, { role: 'assistant', content: story }];
     res.json({ text: story });
-  } catch (error) {
-    console.error("❌ Error generating story:", error.response?.data || error.message);
+  } catch (err) {
+    console.error("❌ Story error:", err.response?.data || err.message);
     res.status(500).json({ error: 'Failed to generate story.' });
   }
 });
 
-// 🔊 ElevenLabs Narration (called explicitly by frontend)
+// 🔊 ElevenLabs Narration (stream-ready)
 app.post('/api/narrate', async (req, res) => {
   const { text, voiceId } = req.body;
+
   if (!text || !voiceId) return res.status(400).json({ error: 'Missing text or voiceId.' });
 
   try {
@@ -112,10 +87,7 @@ app.post('/api/narrate', async (req, res) => {
       data: {
         text,
         model_id: 'eleven_monolingual_v1',
-        voice_settings: {
-          stability: 0.5,
-          similarity_boost: 0.7
-        }
+        voice_settings: { stability: 0.5, similarity_boost: 0.7 }
       }
     });
 
@@ -127,22 +99,28 @@ app.post('/api/narrate', async (req, res) => {
   }
 });
 
-// 🎙️ Fetch Available Voices
+// 🎙️ Voice list with 10-min cache
 app.get('/api/get-voices', async (req, res) => {
+  const now = Date.now();
+  if (voiceCache && now - lastVoiceFetch < 10 * 60 * 1000) {
+    return res.json(voiceCache);
+  }
+
   try {
     const response = await axios.get('https://api.elevenlabs.io/v1/voices', {
       headers: { 'xi-api-key': process.env.ELEVENLABS_API_KEY }
     });
 
-    const voices = response.data.voices || [];
-    res.json(voices);
+    voiceCache = response.data.voices || [];
+    lastVoiceFetch = now;
+    res.json(voiceCache);
   } catch (error) {
-    console.error("❌ Failed to fetch voices:", error.response?.data || error.message);
+    console.error("❌ Voice fetch error:", error.response?.data || error.message);
     res.status(500).json({ error: 'Could not fetch voices' });
   }
 });
 
-// 🚀 Launch Server
+// 🚀 Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
