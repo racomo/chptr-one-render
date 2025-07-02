@@ -115,24 +115,22 @@
     const sessionId = localStorage.getItem('sessionId') || crypto.randomUUID();
     localStorage.setItem('sessionId', sessionId);
     let sessionMessages = JSON.parse(localStorage.getItem('sessionMessages')) || [];
+    let voiceCache = [];
 
     async function loadVoices(languageCode) {
-      try {
+      if (voiceCache.length === 0) {
         const response = await fetch('/api/get-voices');
-        const voices = await response.json();
-        voiceSelect.innerHTML = '';
-        voices
-          .filter(v => v.labels?.language?.toLowerCase().startsWith(languageCode))
-          .forEach(voice => {
-            const option = document.createElement('option');
-            option.value = voice.voice_id;
-            option.textContent = `${voice.name} (${voice.labels?.accent || 'Default'})`;
-            voiceSelect.appendChild(option);
-          });
-      } catch (err) {
-        voiceSelect.innerHTML = '<option>Error loading voices</option>';
-        console.error(err);
+        voiceCache = await response.json();
       }
+      voiceSelect.innerHTML = '';
+      voiceCache
+        .filter(v => v.labels?.language?.toLowerCase().startsWith(languageCode))
+        .forEach(voice => {
+          const option = document.createElement('option');
+          option.value = voice.voice_id;
+          option.textContent = `${voice.name} (${voice.labels?.accent || 'Default'})`;
+          voiceSelect.appendChild(option);
+        });
     }
 
     function saveSessionLocally() {
