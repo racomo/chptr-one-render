@@ -116,25 +116,23 @@
     localStorage.setItem('sessionId', sessionId);
     let sessionMessages = JSON.parse(localStorage.getItem('sessionMessages')) || [];
 
-    const langMap = {
-      en: 'en-US',
-      da: 'da-DK',
-      es: 'es-ES',
-      fr: 'fr-FR'
-    };
-
     async function loadVoices(languageCode) {
-      const response = await fetch('/api/get-voices');
-      const voices = await response.json();
-      voiceSelect.innerHTML = '';
-      voices
-        .filter(v => v.labels?.language?.toLowerCase().startsWith(languageCode))
-        .forEach(voice => {
-          const option = document.createElement('option');
-          option.value = voice.voice_id;
-          option.textContent = `${voice.name} (${voice.labels?.accent || 'Default'})`;
-          voiceSelect.appendChild(option);
-        });
+      try {
+        const response = await fetch('/api/get-voices');
+        const voices = await response.json();
+        voiceSelect.innerHTML = '';
+        voices
+          .filter(v => v.labels?.language?.toLowerCase().startsWith(languageCode))
+          .forEach(voice => {
+            const option = document.createElement('option');
+            option.value = voice.voice_id;
+            option.textContent = `${voice.name} (${voice.labels?.accent || 'Default'})`;
+            voiceSelect.appendChild(option);
+          });
+      } catch (err) {
+        voiceSelect.innerHTML = '<option>Error loading voices</option>';
+        console.error(err);
+      }
     }
 
     function saveSessionLocally() {
@@ -212,28 +210,16 @@
     askBtn.addEventListener('click', () => {
       if (audioPlayer && !audioPlayer.paused) audioPlayer.pause();
 
-      const langCode = languageSelect.value;
-      const recogLang = langMap[langCode] || 'en-US';
-
       const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-      recognition.lang = recogLang;
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
-
-      recognition.onstart = () => {
-        outputText.textContent = "🎤 Listening...";
-      };
-
+      recognition.lang = 'en-US';
       recognition.onresult = (event) => {
         const question = event.results[0][0].transcript;
         outputText.textContent = `🎤 You asked: ${question}`;
         generateStory(question);
       };
-
       recognition.onerror = (event) => {
         outputText.textContent = `❌ Error: ${event.error}`;
       };
-
       recognition.start();
     });
 
