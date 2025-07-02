@@ -78,7 +78,7 @@ app.post('/api/generate-story', async (req, res) => {
   }
 });
 
-// 🔊 ElevenLabs Narration with Streaming
+// 🔊 ElevenLabs Narration
 app.post('/api/narrate', async (req, res) => {
   const { text, voiceId } = req.body;
 
@@ -87,29 +87,29 @@ app.post('/api/narrate', async (req, res) => {
   }
 
   try {
-    const elevenStream = await axios({
+    const response = await axios({
       method: 'POST',
-      url: `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`,
+      url: `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
       headers: {
         'xi-api-key': process.env.ELEVENLABS_API_KEY,
         'Content-Type': 'application/json'
       },
-      responseType: 'stream',
+      responseType: 'arraybuffer',
       data: {
         text,
         model_id: 'eleven_monolingual_v1',
         voice_settings: {
-          stability: 0.4,
-          similarity_boost: 0.8
+          stability: 0.5,
+          similarity_boost: 0.7
         }
       }
     });
 
-    res.setHeader('Content-Type', 'audio/mpeg');
-    elevenStream.data.pipe(res);
+    res.set('Content-Type', 'audio/mpeg');
+    res.send(response.data);
   } catch (err) {
-    console.error("❌ Narration stream error:", err.response?.data || err.message);
-    res.status(500).json({ error: 'Streaming narration failed' });
+    console.error("❌ Narration error:", err.response?.data || err.message);
+    res.status(500).json({ error: 'Narration failed' });
   }
 });
 
@@ -128,7 +128,7 @@ app.get('/api/get-voices', async (req, res) => {
   }
 });
 
-// 🚀 Start Server
+// 🚀 Start Server with Dynamic Port Binding (for Render, etc.)
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
