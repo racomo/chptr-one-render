@@ -27,3 +27,9 @@ beginner
 advanced	
 0	"Velkommen tilbage. Du ved allerede noget — lad os bygge videre på det."
 1	"Hvad nu hvis AI kunne afspejle, hvordan *du* tænker? Lad os finde ud af det."
+{
+  "english_beginner": "Here’s your first AI adventure...",
+  "french_intermediate": "Bienvenue dans votre exploration de l’IA...",
+  ...
+}
+
