@@ -1,0 +1,22 @@
+{
+  "en": {
+    "beginner": ["Let’s take a simple walk into the world of AI. Imagine you’re baking a cake…"],
+    "intermediate": ["AI isn't magic — it's logic. Imagine you're building a Lego robot…"],
+    "advanced": ["The boundary between neural networks and consciousness is blurring…"]
+  },
+  "es": {
+    "beginner": ["Vamos a descubrir la inteligencia artificial como si fuera una historia sencilla…"],
+    "intermediate": ["La IA no es magia, es lógica. Imagina que programas un robot para ayudarte…"],
+    "advanced": ["La frontera entre las redes neuronales y la conciencia se vuelve difusa…"]
+  },
+  "fr": {
+    "beginner": ["Découvrons l’IA ensemble, comme une histoire racontée autour d’un feu de camp…"],
+    "intermediate": ["L’intelligence artificielle n’est pas un mystère, mais une mécanique fascinante…"],
+    "advanced": ["À mesure que les algorithmes deviennent plus complexes, une question émerge…"]
+  },
+  "da": {
+    "beginner": ["Forestil dig, at AI er som en hjælpsom ven, der forstår dig bedre hver dag…"],
+    "intermediate": ["AI handler ikke kun om data — det handler om at forstå og handle…"],
+    "advanced": ["I takt med at algoritmer udvikler sig, nærmer vi os noget dybere…"]
+  }
+}
