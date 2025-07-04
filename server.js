@@ -1,163 +1,94 @@
 const express = require('express');
-const app = express();
+const fs = require('fs');
 const path = require('path');
-const OpenAI = require('openai');
 const axios = require('axios');
+const OpenAI = require('openai');
 require('dotenv').config();
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
+const app = express();
+const PORT = 10000;
 app.use(express.static(path.join(__dirname)));
 app.use(express.json());
 
-// In-memory cache for fallback story templates
-const storyCache = {
-  en: {
-    beginner: ["Let’s take a simple walk into the world of AI. Imagine you’re baking a cake…"],
-    intermediate: ["AI isn't magic — it's logic. Imagine you're building a Lego robot…"],
-    advanced: ["The boundary between neural networks and consciousness is blurring…"]
-  },
-  es: {
-    beginner: ["Vamos a descubrir la inteligencia artificial como si fuera una historia sencilla…"],
-    intermediate: ["La IA no es magia, es lógica. Imagina que programas un robot para ayudarte…"],
-    advanced: ["La frontera entre las redes neuronales y la conciencia se vuelve difusa…"]
-  },
-  fr: {
-    beginner: ["Découvrons l’IA ensemble, comme une histoire racontée autour d’un feu de camp…"],
-    intermediate: ["L’intelligence artificielle n’est pas un mystère, mais une mécanique fascinante…"],
-    advanced: ["À mesure que les algorithmes deviennent plus complexes, une question émerge…"]
-  },
-  da: {
-    beginner: ["Forestil dig, at AI er som en hjælpsom ven, der forstår dig bedre hver dag…"],
-    intermediate: ["AI handler ikke kun om data — det handler om at forstå og handle…"],
-    advanced: ["I takt med at algoritmer udvikler sig, nærmer vi os noget dybere…"]
-  }
-};
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
 
-// Helper: context-aware greeting
-function getGreeting() {
-  const now = new Date();
-  const hour = now.getUTCHours() + 2; // CET
-  if (hour >= 5 && hour < 12) return "Good morning";
-  if (hour >= 12 && hour < 18) return "Good afternoon";
-  if (hour >= 18 && hour < 22) return "Good evening";
-  return "Hello";
+// Load preloaded stories
+let preloadedStories = {};
+try {
+  preloadedStories = JSON.parse(fs.readFileSync('./preloadedStories.json', 'utf8'));
+} catch (error) {
+  console.error('Failed to load preloaded stories:', error);
 }
 
-// Serve UI pages
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
-app.get('/start', (req, res) => res.sendFile(path.join(__dirname, 'start.html')));
+// Determine greeting based on time
+function getTimeBasedGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning.";
+  if (hour < 18) return "Good afternoon.";
+  return "Good evening.";
+}
 
-// In-memory session store
-const sessions = {};
-app.get('/api/get-session', (req, res) => {
-  const { sessionId } = req.query;
-  res.json({ messages: sessions[sessionId] || [] });
-});
-app.post('/api/save-session', (req, res) => {
-  const { sessionId, messages } = req.body;
-  if (sessionId && Array.isArray(messages)) {
-    sessions[sessionId] = messages;
-    res.status(200).json({ success: true });
-  } else {
-    res.status(400).json({ error: 'Invalid session data' });
-  }
-});
-
-// Generate Personalized Story
-app.post('/api/generate-story', async (req, res) => {
-  const { prompt, sessionId, messages = [], userName, language = 'en', level = 'beginner' } = req.body;
-  const greeting = getGreeting();
-  const userLabel = userName || "the listener";
-
-  const baseSystemPrompt = `${greeting}, ${userLabel}. You are a powerful storyteller delivering personalized insight — not a TED speaker. Speak with clarity, emotional depth, and always adapt to the user's level (${level}). Avoid repeating 'TED talk' references.`;
-
-  const openAIRequest = {
-    model: 'gpt-4',
-    messages: [
-      { role: 'system', content: baseSystemPrompt },
-      ...messages,
-      { role: 'user', content: prompt }
-    ],
-    temperature: 0.85,
-    max_tokens: 1200
-  };
-
+// GPT fallback wrapper
+async function getChatResponse(messages) {
   try {
-    const result = await openai.chat.completions.create(openAIRequest);
-    const story = result.choices?.[0]?.message?.content?.trim();
-
-    if (!story) throw new Error("GPT-4 returned empty.");
-
-    if (sessionId) sessions[sessionId] = [...messages, { role: 'assistant', content: story }];
-    res.json({ text: story });
-  } catch (err) {
-    console.warn("⚠️ GPT-4 failed, retrying with GPT-3.5:", err.message);
-
-    try {
-      const fallbackResult = await openai.chat.completions.create({
-        ...openAIRequest,
-        model: 'gpt-3.5-turbo'
-      });
-      const fallbackStory = fallbackResult.choices?.[0]?.message?.content?.trim();
-
-      if (sessionId) sessions[sessionId] = [...messages, { role: 'assistant', content: fallbackStory }];
-      res.json({ text: fallbackStory || storyCache[language]?.[level] || "Let’s explore something amazing together…" });
-    } catch (fallbackError) {
-      console.error("❌ GPT-3.5 fallback failed:", fallbackError.message);
-      res.json({ text: storyCache[language]?.[level] || "Let’s explore something amazing together…" });
-    }
-  }
-});
-
-// ElevenLabs Narration
-app.post('/api/narrate', async (req, res) => {
-  const { text, voiceId } = req.body;
-  if (!text || !voiceId) return res.status(400).json({ error: 'Missing text or voiceId.' });
-
-  try {
-    const response = await axios({
-      method: 'POST',
-      url: `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
-      headers: {
-        'xi-api-key': process.env.ELEVENLABS_API_KEY,
-        'Content-Type': 'application/json'
-      },
-      responseType: 'arraybuffer',
-      data: {
-        text,
-        model_id: 'eleven_monolingual_v1',
-        voice_settings: { stability: 0.4, similarity_boost: 0.7 }
-      }
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages,
     });
-
-    res.set('Content-Type', 'audio/mpeg');
-    res.send(response.data);
+    return completion.choices[0].message.content;
   } catch (err) {
-    console.error("❌ Narration error:", err.message);
-    res.status(500).json({ error: 'Narration failed' });
+    console.warn('GPT-4 failed, falling back to GPT-3.5');
+    const fallback = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages,
+    });
+    return fallback.choices[0].message.content;
   }
-});
+}
 
-// Filter voices by language tag
-app.get('/api/get-voices', async (req, res) => {
+// Route: get voice options
+app.get('/voices', async (req, res) => {
   try {
     const response = await axios.get('https://api.elevenlabs.io/v1/voices', {
-      headers: { 'xi-api-key': process.env.ELEVENLABS_API_KEY }
+      headers: { 'xi-api-key': ELEVENLABS_API_KEY },
     });
-
-    const voices = response.data.voices.filter(v => {
-      const tags = (v.labels?.language || '').toLowerCase();
-      return ['english', 'spanish', 'french', 'danish'].some(lang => tags.includes(lang));
-    });
-
+    const voices = response.data.voices.filter(v =>
+      ['en', 'fr', 'es', 'da'].some(lang => v.labels?.accent?.toLowerCase().includes(lang))
+    );
     res.json(voices);
   } catch (error) {
-    console.error("❌ Failed to fetch voices:", error.message);
-    res.status(500).json({ error: 'Could not fetch voices' });
+    console.error('Error fetching voices:', error.message);
+    res.status(500).json({ error: 'Failed to fetch voices' });
   }
 });
 
-// Server Start
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
+// Route: get cached story start
+app.post('/story/start', (req, res) => {
+  const { level, language } = req.body;
+  const key = `${language}_${level}`.toLowerCase();
+  const story = preloadedStories[key] || "Welcome. This story is not available yet.";
+  res.json({ content: `${getTimeBasedGreeting()} ${story}` });
+});
+
+// Route: continue story or respond to question
+app.post('/story/continue', async (req, res) => {
+  const { history, language, level } = req.body;
+
+  const messages = [
+    { role: 'system', content: `You are a helpful AI teacher that speaks ${language}. Avoid references to TED talks.` },
+    ...history,
+  ];
+
+  try {
+    const reply = await getChatResponse(messages);
+    res.json({ content: reply });
+  } catch (error) {
+    console.error('Error during story continuation:', error);
+    res.status(500).json({ error: 'Failed to continue the story' });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+});
