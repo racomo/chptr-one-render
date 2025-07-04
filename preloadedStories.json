@@ -1,35 +1,64 @@
-	
-en	
-beginner	
-0	"Welcome to Chapter One. Imagine walking into a world where AI isn’t just code – it’s a conversation. Let’s start simple."
-1	"You’re not expected to know anything. Just listen, and ask when you're ready."
-advanced	
-0	"Welcome back. You know enough to be dangerous — let’s make that a superpower. This isn’t just learning. This is alignment."
-1	"What if AI could reflect the way *you* think? Let’s test that idea right now."
-fr	
-beginner	
-0	"Bienvenue dans Chapitre Un. Imaginez un monde où l’IA devient une conversation. On commence doucement."
-1	"Aucune connaissance requise. Écoutez simplement, posez vos questions quand vous êtes prêt."
-advanced	
-0	"Content de vous revoir. Vous avez déjà des bases solides — maintenant allons plus loin."
-1	"Et si l’IA pouvait vraiment refléter votre manière de penser ?"
-es	
-beginner	
-0	"Bienvenido a Capítulo Uno. Aquí, la inteligencia artificial no es complicada — es una conversación."
-1	"No necesitas saber nada. Solo escucha y pregunta cuando quieras."
-advanced	
-0	"Estás de vuelta, y eso dice mucho. Vamos a construir sobre lo que ya conoces."
-1	"¿Y si la IA pudiera adaptarse a tu forma de pensar? Vamos a descubrirlo."
-da	
-beginner	
-0	"Velkommen til Kapitel Ét. Forestil dig, at AI ikke er noget teknisk — men en samtale."
-1	"Du behøver ikke vide noget på forhånd. Bare lyt, og spørg når du er klar."
-advanced	
-0	"Velkommen tilbage. Du ved allerede noget — lad os bygge videre på det."
-1	"Hvad nu hvis AI kunne afspejle, hvordan *du* tænker? Lad os finde ud af det."
 {
-  "english_beginner": "Here’s your first AI adventure...",
-  "french_intermediate": "Bienvenue dans votre exploration de l’IA...",
-  ...
+  "en": {
+    "beginner": [
+      "Welcome to Chapter One. Imagine walking into a world where AI isn’t just code – it’s a conversation. Let’s start simple.",
+      "You’re not expected to know anything. Just listen, and ask when you're ready.",
+      "Here’s your first AI adventure...",
+      "Imagine AI as your friendly assistant. You ask, and it helps — like magic, but real. Let's begin."
+    ],
+    "intermediate": [
+      "You're walking into your office. Only this time, an AI co-pilot is by your side, ready to boost your workday."
+    ],
+    "advanced": [
+      "Welcome back. You know enough to be dangerous — let’s make that a superpower. This isn’t just learning. This is alignment.",
+      "What if AI could reflect the way *you* think? Let’s test that idea right now.",
+      "Let’s dive deep. You already know the buzzwords — now let’s challenge the limits of what AI can really do."
+    ]
+  },
+  "fr": {
+    "beginner": [
+      "Bienvenue dans Chapitre Un. Imaginez un monde où l’IA devient une conversation. On commence doucement.",
+      "Aucune connaissance requise. Écoutez simplement, posez vos questions quand vous êtes prêt.",
+      "Imaginez que l'IA est comme un guide amical qui répond à toutes vos questions. Commençons."
+    ],
+    "intermediate": [
+      "Bienvenue dans votre exploration de l’IA...",
+      "Vous arrivez au bureau. L’IA vous accompagne, prête à améliorer votre quotidien professionnel."
+    ],
+    "advanced": [
+      "Content de vous revoir. Vous avez déjà des bases solides — maintenant allons plus loin.",
+      "Et si l’IA pouvait vraiment refléter votre manière de penser ?",
+      "Vous maîtrisez déjà les bases. Plongeons dans des scénarios complexes et stratégiques d’IA."
+    ]
+  },
+  "es": {
+    "beginner": [
+      "Bienvenido a Capítulo Uno. Aquí, la inteligencia artificial no es complicada — es una conversación.",
+      "No necesitas saber nada. Solo escucha y pregunta cuando quieras.",
+      "Imagina que la inteligencia artificial es como un compañero que siempre está dispuesto a ayudarte. Empecemos."
+    ],
+    "intermediate": [
+      "Llegas a tu trabajo y una IA te espera, lista para ayudarte a tomar mejores decisiones."
+    ],
+    "advanced": [
+      "Estás de vuelta, y eso dice mucho. Vamos a construir sobre lo que ya conoces.",
+      "¿Y si la IA pudiera adaptarse a tu forma de pensar? Vamos a descubrirlo.",
+      "Conoces los conceptos básicos. Ahora exploraremos cómo usar la IA de forma estratégica e innovadora."
+    ]
+  },
+  "da": {
+    "beginner": [
+      "Velkommen til Kapitel Ét. Forestil dig, at AI ikke er noget teknisk — men en samtale.",
+      "Du behøver ikke vide noget på forhånd. Bare lyt, og spørg når du er klar.",
+      "Forestil dig, at AI er som en hjælpsom ven, der altid lytter og svarer. Lad os begynde."
+    ],
+    "intermediate": [
+      "Du træder ind på kontoret. Din AI-partner er klar til at gøre din dag lettere."
+    ],
+    "advanced": [
+      "Velkommen tilbage. Du ved allerede noget — lad os bygge videre på det.",
+      "Hvad nu hvis AI kunne afspejle, hvordan *du* tænker? Lad os finde ud af det.",
+      "Du kender AI’en. Nu ser vi, hvordan den kan skabe ægte forandring i din hverdag."
+    ]
+  }
 }
-
