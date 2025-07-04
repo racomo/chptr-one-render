@@ -116,3 +116,5 @@ app.get('/api/get-voices', async (req, res) => {
 });
 
 app.listen(PORT, () => console.log(`🚀 Running on port ${PORT}`));
+const streamVoiceRoute = require('./stream');
+app.use('/', streamVoiceRoute);
