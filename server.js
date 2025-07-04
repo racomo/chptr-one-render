@@ -9,14 +9,21 @@ require('dotenv').config();
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const PORT = process.env.PORT || 10000;
 
-// ✅ Serve static files (public assets, e.g., logo)
+// ✅ Serve static files (e.g. logo in /public)
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 
-// ✅ Route for start.html
-app.get('/start', (req, res) => res.sendFile(path.join(__dirname, 'start.html')));
+// ✅ Route for root
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'start.html')); // Set this as homepage
+});
 
-// ✅ Load cached JSONs
+// ✅ Route for /start (optional)
+app.get('/start', (req, res) => {
+  res.sendFile(path.join(__dirname, 'start.html'));
+});
+
+// ✅ Load preloaded stories
 let preloadedStories = {};
 try { preloadedStories = JSON.parse(fs.readFileSync('./preloadedStories.json')); } catch {}
 let storyCache = {};
@@ -30,7 +37,7 @@ function getStoryIntro(level, lang) {
   return storyCache[`${lang}_${level}`] || "Let's explore AI together.";
 }
 
-// ✅ Session management
+// ✅ Session memory
 const sessions = {};
 app.get('/api/get-session', (req, res) => {
   const { sessionId } = req.query;
@@ -45,14 +52,16 @@ app.post('/api/save-session', (req, res) => {
   res.status(400).json({ error: 'Invalid session' });
 });
 
-// ✅ AI story generator with fallback
+// ✅ GPT response with fallback
 app.post('/api/generate-story', async (req, res) => {
   const { prompt, sessionId, messages = [], userName, level, language } = req.body;
   const intro = getStoryIntro(level, language);
+
   const systemPrompt = `
 You are a friendly, personalized narrator tailored to one user: ${userName || 'the listener'}.
 Speak in ${language}, at a ${level} level. No TED references or time-of-day greetings.
   `;
+
   const conversation = [
     { role: 'system', content: systemPrompt },
     ...messages,
@@ -90,7 +99,7 @@ Speak in ${language}, at a ${level} level. No TED references or time-of-day gree
   }
 });
 
-// ✅ Standard TTS (legacy fallback)
+// ✅ Standard TTS (legacy endpoint, not streaming)
 app.post('/api/narrate', async (req, res) => {
   const { text, voiceId } = req.body;
   if (!text || !voiceId) return res.status(400).json({ error: 'Missing text or voiceId.' });
@@ -114,11 +123,11 @@ app.post('/api/narrate', async (req, res) => {
   }
 });
 
-// ✅ Streamed voice playback
+// ✅ Streaming voice endpoint (real-time audio)
 const streamVoiceRoute = require('./stream');
 app.use('/', streamVoiceRoute);
 
-// ✅ Voice selector
+// ✅ Voice selection logic
 app.get('/api/get-voices', async (req, res) => {
   try {
     const { data } = await axios.get('https://api.elevenlabs.io/v1/voices', {
@@ -133,4 +142,5 @@ app.get('/api/get-voices', async (req, res) => {
   }
 });
 
+// ✅ Start server
 app.listen(PORT, () => console.log(`🚀 Running on port ${PORT}`));
