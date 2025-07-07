@@ -116,119 +116,105 @@
     localStorage.setItem('sessionId', sessionId);
     let sessionMessages = JSON.parse(localStorage.getItem('sessionMessages')) || [];
 
-    async function loadVoices(languageCode) {
-      const response = await fetch('/api/get-voices');
-      const voices = await response.json();
+    async function loadVoices(langCode) {
+      const res = await fetch('/api/get-voices');
+      const all = await res.json();
+      const filtered = all
+        .filter(v => v.labels?.language?.toLowerCase().startsWith(langCode))
+        .slice(0, 4);
       voiceSelect.innerHTML = '';
-      const filtered = voices.filter(v => v.labels?.language?.toLowerCase().startsWith(languageCode));
-      if (filtered.length === 0) {
-        voiceSelect.innerHTML = '<option disabled selected>No voices available for this language</option>';
+      if (!filtered.length) {
+        voiceSelect.innerHTML = '<option disabled>No voices available</option>';
       } else {
-        filtered.forEach(voice => {
-          const option = document.createElement('option');
-          option.value = voice.voice_id;
-          option.textContent = `${voice.name} (${voice.labels?.accent || 'Default'})`;
-          voiceSelect.appendChild(option);
+        filtered.forEach(v => {
+          const opt = document.createElement('option');
+          opt.value = v.voice_id;
+          opt.textContent = `${v.name} (${v.labels?.accent || 'Default'})`;
+          voiceSelect.appendChild(opt);
         });
       }
     }
 
-    function saveSessionLocally() {
+    function saveLocal() {
       localStorage.setItem('sessionMessages', JSON.stringify(sessionMessages));
     }
-
-    async function saveSessionServer() {
+    async function saveServer() {
       await fetch('/api/save-session', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ sessionId, messages: sessionMessages })
       });
     }
-
-    async function loadSessionServer() {
+    async function loadServer() {
       const res = await fetch(`/api/get-session?sessionId=${sessionId}`);
-      const data = await res.json();
-      sessionMessages = data.messages || [];
+      sessionMessages = (await res.json()).messages || [];
     }
 
-    async function generateStory(promptText) {
-      const voiceId = voiceSelect.value;
+    async function generate(promptText) {
       const name = userName.value.trim();
-      if (!voiceId || !name) {
-        alert("Please enter your name and choose a voice.");
+      const voiceId = voiceSelect.value;
+      if (!name || !voiceId) {
+        alert('Please enter your name and select a voice.');
         return;
       }
-
       if (!audioPlayer.paused) audioPlayer.pause();
 
       sessionMessages.push({ role: 'user', content: promptText });
-
-      const response = await fetch('/api/generate-story', {
+      const res = await fetch('/api/generate-story', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: promptText, sessionId, messages: sessionMessages, userName: name })
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          prompt: promptText,
+          sessionId,
+          messages: sessionMessages,
+          userName: name,
+          level: levelSelect.value,
+          language: languageSelect.value
+        })
       });
-
-      const data = await response.json();
-      const story = data.text;
+      const data = await res.json();
+      const story = data.text || data.story;
       if (!story) return;
 
       outputText.textContent = story;
       sessionMessages.push({ role: 'assistant', content: story });
-      saveSessionLocally();
-      await saveSessionServer();
+      saveLocal();
+      await saveServer();
 
-      const streamUrl = `/stream-voice?text=${encodeURIComponent(story)}&voiceId=${encodeURIComponent(voiceId)}`;
-      audioPlayer.src = streamUrl;
+      audioPlayer.src = `/stream-voice?text=${encodeURIComponent(story)}&voiceId=${encodeURIComponent(voiceId)}`;
       audioPlayer.play();
 
       continueBtn.style.display = 'block';
     }
 
-    generateBtn.addEventListener('click', () => {
-      const langText = languageSelect.options[languageSelect.selectedIndex].text;
-      const level = levelSelect.value;
+    generateBtn.onclick = () => {
       const name = userName.value.trim();
-      const prompt = `Explain AI to ${name}, using ${langText}, keeping it at a ${level} level. Make it feel like a personal TED Talk.`;
-      generateStory(prompt);
-    });
+      const lvl = levelSelect.value;
+      const langName = languageSelect.options[languageSelect.selectedIndex].text;
+      generate(`Explain AI to ${name}, in ${langName} at ${lvl} level.`);
+    };
 
-    continueBtn.addEventListener('click', () => {
+    continueBtn.onclick = () => {
       const name = userName.value.trim();
-      const level = levelSelect.value;
-      const prompt = `Continue the story with more insights at ${level} level and keep addressing ${name} personally.`;
-      generateStory(prompt);
-    });
+      const lvl = levelSelect.value;
+      generate(`Continue the story at ${lvl} level, addressing ${name} personally.`);
+    };
 
-    askBtn.addEventListener('click', () => {
+    askBtn.onclick = () => {
       if (!audioPlayer.paused) audioPlayer.pause();
+      const rec = new (window.SpeechRecognition || webkitSpeechRecognition)();
+      rec.lang = { da: 'da-DK', es: 'es-ES', fr: 'fr-FR' }[languageSelect.value] || 'en-US';
+      rec.onresult = e => generate(e.results[0][0].transcript);
+      rec.onerror = e => outputText.textContent = `❌ ${e.error}`;
+      rec.start();
+    };
 
-      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-      recognition.lang = languageSelect.value === 'da' ? 'da-DK' :
-                         languageSelect.value === 'es' ? 'es-ES' :
-                         languageSelect.value === 'fr' ? 'fr-FR' : 'en-US';
-
-      recognition.onresult = (event) => {
-        const question = event.results[0][0].transcript;
-        outputText.textContent = `🎤 You asked: ${question}`;
-        generateStory(question);
-      };
-
-      recognition.onerror = (event) => {
-        outputText.textContent = `❌ Error: ${event.error}`;
-      };
-
-      recognition.start();
-    });
-
-    languageSelect.addEventListener('change', async () => {
-      await loadVoices(languageSelect.value);
-    });
+    languageSelect.onchange = () => loadVoices(languageSelect.value);
 
     window.onload = async () => {
       await loadVoices(languageSelect.value);
-      await loadSessionServer();
-      const last = sessionMessages.find(m => m.role === 'assistant');
+      await loadServer();
+      const last = [...sessionMessages].reverse().find(m => m.role === 'assistant');
       if (last) outputText.textContent = last.content;
     };
   </script>
