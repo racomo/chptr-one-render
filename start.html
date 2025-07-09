@@ -116,15 +116,30 @@
     localStorage.setItem('sessionId', sessionId);
     let sessionMessages = JSON.parse(localStorage.getItem('sessionMessages')) || [];
 
+    const languageMap = {
+      en: 'english',
+      fr: 'french',
+      es: 'spanish',
+      da: 'danish'
+    };
+
+    let cachedVoices = [];
+
     async function loadVoices(langCode) {
-      const res = await fetch('/api/get-voices');
-      const all = await res.json();
-      const filtered = all
-        .filter(v => v.labels?.language?.toLowerCase().startsWith(langCode))
+      if (!cachedVoices.length) {
+        const res = await fetch('/api/get-voices');
+        cachedVoices = await res.json();
+      }
+
+      const targetLang = languageMap[langCode] || 'english';
+      const filtered = cachedVoices
+        .filter(v => v.labels?.language?.toLowerCase() === targetLang)
         .slice(0, 4);
+
       voiceSelect.innerHTML = '';
+
       if (!filtered.length) {
-        voiceSelect.innerHTML = '<option disabled>No voices available</option>';
+        voiceSelect.innerHTML = '<option disabled selected>No voices available</option>';
       } else {
         filtered.forEach(v => {
           const opt = document.createElement('option');
@@ -138,6 +153,7 @@
     function saveLocal() {
       localStorage.setItem('sessionMessages', JSON.stringify(sessionMessages));
     }
+
     async function saveServer() {
       await fetch('/api/save-session', {
         method: 'POST',
@@ -145,6 +161,7 @@
         body: JSON.stringify({ sessionId, messages: sessionMessages })
       });
     }
+
     async function loadServer() {
       const res = await fetch(`/api/get-session?sessionId=${sessionId}`);
       sessionMessages = (await res.json()).messages || [];
